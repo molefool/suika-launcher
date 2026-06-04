@@ -210,8 +210,8 @@ set(Launcher_IMGUR_CLIENT_ID "" CACHE STRING "Client ID you can get from Imgur w
 set(Launcher_BUG_TRACKER_URL "https://github.com/molefool/suika-launcher/issues" CACHE STRING "URL for the bug tracker.")
 
 # Translations Platform URL
-set(Launcher_TRANSLATIONS_URL "" CACHE STRING "URL for the translations platform.")
-set(Launcher_TRANSLATION_FILES_URL "" CACHE STRING "URL for the translations files.")
+set(Launcher_TRANSLATIONS_URL "https://hosted.weblate.org/projects/prismlauncher/launcher/" CACHE STRING "URL for the translations platform.")
+set(Launcher_TRANSLATION_FILES_URL "https://i18n.prismlauncher.org/" CACHE STRING "URL for the translations files.")
 
 # Matrix Space
 set(Launcher_MATRIX_URL "https://github.com/molefool/suika-launcher/issues" CACHE STRING "URL to the Matrix Space")

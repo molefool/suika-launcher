@@ -37,6 +37,7 @@
 #include "TranslationsModel.h"
 
 #include <QDebug>
+#include <functional>
 #include <memory>
 #include <utility>
 
@@ -64,6 +65,22 @@ QString getSystemLocaleName()
 QString getSystemLanguage()
 {
     return getSystemLocaleName().split('_').front();
+}
+
+QString firstAvailablePreferredLanguage(const std::function<bool(const QString&)>& hasLanguage, const QString& configuredLanguage = {})
+{
+    QStringList preferredLanguages;
+    for (const auto& language : { configuredLanguage, QStringLiteral("zh"), getSystemLocaleName(), getSystemLanguage(), QString(g_defaultLangCode) }) {
+        if (!language.isEmpty() && !preferredLanguages.contains(language)) {
+            preferredLanguages.append(language);
+        }
+    }
+    for (const auto& language : preferredLanguages) {
+        if (hasLanguage(language)) {
+            return language;
+        }
+    }
+    return {};
 }
 }  // namespace
 
@@ -161,6 +178,7 @@ struct TranslationsModel::Private {
     QList<Language> m_languages = { Language(g_defaultLangCode) };
 
     QString m_selectedLanguage = g_defaultLangCode;
+    QString m_requestedLanguage;
     std::unique_ptr<QTranslator> m_qtTranslator;
     std::unique_ptr<QTranslator> m_appTranslator;
 
@@ -180,8 +198,25 @@ TranslationsModel::TranslationsModel(const QString& path, QObject* parent) : QAb
     d = std::make_unique<Private>();
     d->m_dir.setPath(path);
     d->m_selectedLanguage = APPLICATION->settings()->get("Language").toString();
+    d->m_requestedLanguage = d->m_selectedLanguage;
     FS::ensureFolderPathExists(path);
     reloadLocalFiles();
+
+    if (d->m_selectedLanguage.isEmpty()) {
+        const auto language = firstAvailablePreferredLanguage([this](const QString& key) { return findLanguageAsOptional(key).has_value(); });
+        if (!language.isEmpty() && language != g_defaultLangCode) {
+            selectLanguage(language);
+            APPLICATION->settings()->set("Language", selectedLanguage());
+        } else {
+            selectLanguage(QString());
+        }
+    } else {
+        if (findLanguageAsOptional(d->m_selectedLanguage).has_value()) {
+            selectLanguage(d->m_selectedLanguage);
+        } else {
+            selectLanguage(QString());
+        }
+    }
 
     d->watcher = new QFileSystemWatcher(this);
     connect(d->watcher, &QFileSystemWatcher::directoryChanged, this, &TranslationsModel::translationDirChanged);
@@ -206,10 +241,8 @@ void TranslationsModel::indexReceived()
     reloadLocalFiles();
 
     if (d->m_noLanguageSet) {
-        auto language = getSystemLocaleName();
-        if (!findLanguageAsOptional(language).has_value()) {
-            language = getSystemLanguage();
-        }
+        auto language =
+            firstAvailablePreferredLanguage([this](const QString& key) { return findLanguageAsOptional(key).has_value(); }, d->m_requestedLanguage);
         selectLanguage(language);
         APPLICATION->settings()->set("Language", selectedLanguage());
         d->m_noLanguageSet = false;

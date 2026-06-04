@@ -24,6 +24,7 @@ Primary fork changes:
 - Added Java version validation for Unified Pass launches.
 - Added default Unified Pass server ID: `aa9441c0487a11e88feb525400b59b6a`.
 - Added simplified Chinese fallback text for the new Unified Pass account UI.
+- Added simplified Chinese as the preferred first-run language.
 - Added `nide8auth.jar` as a separately-noticed third-party runtime component.
 - Rebranded build/package metadata to Suika Launcher.
 - Removed bundled Prism third-party API keys from default CMake configuration.

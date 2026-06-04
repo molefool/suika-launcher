@@ -9,6 +9,7 @@ This project is **not Prism Launcher** and is not endorsed by or affiliated with
 - Adds a Unified Pass account type and login dialog.
 - Supports server ID based authentication against `https://auth.mc-user.com:233/<serverId>/`.
 - Defaults the server ID to `aa9441c0487a11e88feb525400b59b6a` while still allowing it to be changed in the Unified Pass login dialog.
+- Defaults to simplified Chinese (`zh`) when no language was selected and downloads translations into Suika Launcher's own data directory.
 - Implements authenticate, validate, refresh and profile lookup flows compatible with the Mojang-style auth protocol used by Unified Pass.
 - Adds launch-time JVM arguments for Unified Pass sessions:
   - `-javaagent:<nide8auth.jar path>=<serverId>`
@@ -17,6 +18,8 @@ This project is **not Prism Launcher** and is not endorsed by or affiliated with
 - Passes Unified Pass accounts to Minecraft as Mojang/Yggdrasil-compatible sessions and loads the Nide8 agent so Minecraft 1.19+ secure profile public-key checks use the Unified Pass server metadata.
 - Clears Prism Launcher's bundled Microsoft, CurseForge and Imgur API keys for derivative-build compliance.
 - Rebrands build metadata and package identity to Suika Launcher.
+
+Suika Launcher uses its own application data directory. It does not automatically reuse Prism Launcher's instances, accounts, assets, libraries or configuration files.
 
 ## Runtime Agent
 
