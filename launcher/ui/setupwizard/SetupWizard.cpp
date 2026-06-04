@@ -5,6 +5,7 @@
 
 #include <Application.h>
 #include <FileSystem.h>
+#include "SuikaI18n.h"
 #include "translations/TranslationsModel.h"
 
 #include <BuildConfig.h>
@@ -30,7 +31,7 @@ void SetupWizard::retranslate()
     setButtonText(QWizard::BackButton, tr("< &Back"));
     setButtonText(QWizard::FinishButton, tr("&Finish"));
     setButtonText(QWizard::CustomButton1, tr("&Refresh"));
-    setWindowTitle(tr("%1 Quick Setup").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+    setWindowTitle(tr("%1 Quick Setup").arg(SuikaI18n::playerFacingName()));
 }
 
 BaseWizardPage* SetupWizard::getBasePage(int id)

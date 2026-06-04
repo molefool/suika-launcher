@@ -55,6 +55,13 @@ void NewsChecker::reloadNews()
         return;
     }
 
+    if (m_feedUrl.trimmed().isEmpty()) {
+        qDebug() << "News feed URL is empty; skipping news reload.";
+        m_newsEntries.clear();
+        succeed();
+        return;
+    }
+
     m_entry = APPLICATION->metacache()->resolveEntry("feed", "feed.xml");
 
     qDebug() << "Reloading news.";

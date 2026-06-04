@@ -79,14 +79,6 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>Curseforge</string>
-            <key>CFBundleURLSchemes</key>
-            <array>
-            <string>curseforge</string>
-            </array>
-        </dict>
-        <dict>
-            <key>CFBundleURLName</key>
             <string>${Launcher_Name}</string>
             <key>CFBundleURLSchemes</key>
             <array>

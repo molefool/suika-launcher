@@ -34,6 +34,7 @@
  */
 
 #include "AccountData.h"
+#include "minecraft/auth/Nide8AuthConstants.h"
 #include <QDebug>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -307,7 +308,7 @@ bool AccountData::resumeStateFromV3(QJsonObject data)
         userToken = tokenFromJSONV3(data, "utoken");
         mojangservicesToken = tokenFromJSONV3(data, "xrp-mc");
     } else if (type == AccountType::Nide8) {
-        nide8ServerId = data.value("nide8-server-id").toString();
+        nide8ServerId = QString(Nide8Auth::DefaultServerId);
         nide8ApiRoot = data.value("nide8-api-root").toString();
         nide8Username = data.value("nide8-username").toString();
         nide8AuthJarPath = data.value("nide8-auth-jar-path").toString();
@@ -347,7 +348,7 @@ QJsonObject AccountData::saveState() const
         output["type"] = "Offline";
     } else if (type == AccountType::Nide8) {
         output["type"] = "Nide8";
-        output["nide8-server-id"] = nide8ServerId;
+        output["nide8-server-id"] = QString(Nide8Auth::DefaultServerId);
         output["nide8-api-root"] = nide8ApiRoot;
         output["nide8-username"] = nide8Username;
         output["nide8-auth-jar-path"] = nide8AuthJarPath;

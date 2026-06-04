@@ -23,10 +23,17 @@ Primary fork changes:
 - Added JVM argument injection for Unified Pass launches.
 - Added Java version validation for Unified Pass launches.
 - Added default Unified Pass server ID: `aa9441c0487a11e88feb525400b59b6a`.
+- Fixed the Unified Pass server ID for the Suika server and hid the server ID editor from the login UI.
 - Added simplified Chinese fallback text for the new Unified Pass account UI.
-- Added simplified Chinese as the preferred first-run language.
+- Added simplified Chinese as the preferred first-run language and migrated existing Suika Launcher settings to `zh_CN` once.
+- Bundled English and simplified Chinese translations while disabling remote translation downloads.
+- Disabled launcher self-update checks.
+- Replaced the application icon with Suika branding.
+- Updated Unified Pass skin lookup to parse the sessionserver-compatible textures payload.
 - Added `nide8auth.jar` as a separately-noticed third-party runtime component.
-- Rebranded build/package metadata to Suika Launcher.
+- Rebranded build/package metadata to Suika Launcher, while showing `西瓜幻想乡` in player-facing UI.
+- Updated website/help/news links to `https://www.suika.fun/`.
+- Disabled Microsoft login, offline login, CurseForge integration, global API-key settings and Imgur API-key overrides for this server build.
 - Removed bundled Prism third-party API keys from default CMake configuration.
 
 ## Additional Runtime Component

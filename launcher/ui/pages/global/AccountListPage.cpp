@@ -38,29 +38,23 @@
 #include "ui/dialogs/skins/SkinManageDialog.h"
 #include "ui_AccountListPage.h"
 
-#include <QCoreApplication>
 #include <QItemSelectionModel>
-#include <QLocale>
 #include <QMenu>
+#include <QMessageBox>
 #include <QPushButton>
 
 #include <QDebug>
 
-#include "ui/dialogs/ChooseOfflineNameDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
-#include "ui/dialogs/MSALoginDialog.h"
 #include "ui/dialogs/UnifiedPassLoginDialog.h"
 
 #include "Application.h"
+#include "SuikaI18n.h"
 
 namespace {
 QString zhFallback(const char* source, const char* zhCN)
 {
-    const auto translated = QCoreApplication::translate("AccountListPage", source);
-    if (translated == QString::fromLatin1(source) && QLocale::system().language() == QLocale::Chinese) {
-        return QString::fromUtf8(zhCN);
-    }
-    return translated;
+    return SuikaI18n::translate("AccountListPage", source, zhCN);
 }
 }  // namespace
 
@@ -68,9 +62,11 @@ AccountListPage::AccountListPage(QWidget* parent) : QMainWindow(parent), ui(new 
 {
     ui->setupUi(this);
     ui->actionAddUnifiedPass->setText(zhFallback("Add &Unified Pass", "添加统一通行证"));
+    ui->actionAddMicrosoft->setVisible(false);
+    ui->actionAddOffline->setVisible(false);
     ui->listView->setEmptyString(
-        tr("Welcome!\n"
-           "If you're new here, you can select the \"Add Microsoft\" button to link your Microsoft account."));
+        zhFallback("Welcome!\nSelect the \"Add Unified Pass\" button to log in to this server.",
+                   "欢迎！\n请选择“添加统一通行证”登录西瓜幻想乡。"));
     ui->listView->setEmptyMode(VersionListView::String);
     ui->listView->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -98,11 +94,8 @@ AccountListPage::AccountListPage(QWidget* parent) : QMainWindow(parent), ui(new 
 
     updateButtonStates();
 
-    // Xbox authentication won't work without a client identifier, so disable the button if it is missing
-    if (~APPLICATION->capabilities() & Application::SupportsMSA) {
-        ui->actionAddMicrosoft->setVisible(false);
-        ui->actionAddMicrosoft->setToolTip(tr("No Microsoft Authentication client ID was set."));
-    }
+    ui->actionAddMicrosoft->setToolTip(tr("Microsoft account login is disabled in this launcher."));
+    ui->actionAddOffline->setToolTip(tr("Offline account login is disabled in this launcher."));
 }
 
 AccountListPage::~AccountListPage()
@@ -114,6 +107,11 @@ void AccountListPage::retranslate()
 {
     ui->retranslateUi(this);
     ui->actionAddUnifiedPass->setText(zhFallback("Add &Unified Pass", "添加统一通行证"));
+    ui->actionAddMicrosoft->setVisible(false);
+    ui->actionAddOffline->setVisible(false);
+    ui->listView->setEmptyString(
+        zhFallback("Welcome!\nSelect the \"Add Unified Pass\" button to log in to this server.",
+                   "欢迎！\n请选择“添加统一通行证”登录西瓜幻想乡。"));
 }
 
 void AccountListPage::ShowContextMenu(const QPoint& pos)
@@ -128,6 +126,8 @@ void AccountListPage::changeEvent(QEvent* event)
     if (event->type() == QEvent::LanguageChange) {
         ui->retranslateUi(this);
         ui->actionAddUnifiedPass->setText(zhFallback("Add &Unified Pass", "添加统一通行证"));
+        ui->actionAddMicrosoft->setVisible(false);
+        ui->actionAddOffline->setVisible(false);
     }
     QMainWindow::changeEvent(event);
 }
@@ -146,13 +146,11 @@ void AccountListPage::listChanged()
 
 void AccountListPage::on_actionAddMicrosoft_triggered()
 {
-    auto account = MSALoginDialog::newAccount(this);
-    if (account) {
-        m_accounts->addAccount(account);
-        if (m_accounts->count() == 1) {
-            m_accounts->setDefaultAccount(account);
-        }
-    }
+    CustomMessageBox::selectable(this, tr("Login disabled"),
+                                 zhFallback("Microsoft account login is disabled in this launcher.",
+                                            "此启动器已关闭 Microsoft 正版登录。"),
+                                 QMessageBox::Information)
+        ->show();
 }
 
 void AccountListPage::on_actionAddUnifiedPass_triggered()
@@ -168,26 +166,11 @@ void AccountListPage::on_actionAddUnifiedPass_triggered()
 
 void AccountListPage::on_actionAddOffline_triggered()
 {
-    if (!m_accounts->anyAccountIsValid()) {
-        QMessageBox::warning(this, tr("Error"),
-                             tr("You must add a Microsoft account that owns Minecraft before you can add an offline account."
-                                "<br><br>"
-                                "If you have lost your account you can contact Microsoft for support."));
-        return;
-    }
-
-    ChooseOfflineNameDialog dialog(tr("Please enter your desired username to add your offline account."), this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    if (const MinecraftAccountPtr account = MinecraftAccount::createOffline(dialog.getUsername())) {
-        account->login()->start();  // The task will complete here.
-        m_accounts->addAccount(account);
-        if (m_accounts->count() == 1) {
-            m_accounts->setDefaultAccount(account);
-        }
-    }
+    CustomMessageBox::selectable(this, tr("Login disabled"),
+                                 zhFallback("Offline account login is disabled in this launcher.",
+                                            "此启动器已关闭离线账号登录。"),
+                                 QMessageBox::Information)
+        ->show();
 }
 
 void AccountListPage::on_actionRemove_triggered()

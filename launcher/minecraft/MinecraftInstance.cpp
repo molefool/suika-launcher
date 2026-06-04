@@ -308,16 +308,8 @@ void MinecraftInstance::populateLaunchMenu(QMenu* menu)
 {
     QAction* normalLaunch = menu->addAction(tr("&Launch"));
     normalLaunch->setShortcut(QKeySequence::Open);
-    QAction* normalLaunchOffline = menu->addAction(tr("Launch &Offline"));
-    normalLaunchOffline->setShortcut(QKeySequence(tr("Ctrl+Shift+O")));
-    QAction* normalLaunchDemo = menu->addAction(tr("Launch &Demo"));
-    normalLaunchDemo->setShortcut(QKeySequence(tr("Ctrl+Alt+O")));
-
-    normalLaunchDemo->setEnabled(supportsDemo());
 
     connect(normalLaunch, &QAction::triggered, [this] { APPLICATION->launch(this); });
-    connect(normalLaunchOffline, &QAction::triggered, [this] { APPLICATION->launch(this, LaunchMode::Offline); });
-    connect(normalLaunchDemo, &QAction::triggered, [this] { APPLICATION->launch(this, LaunchMode::Demo); });
 
     QString profilersTitle = tr("Profilers");
     menu->addSeparator()->setText(profilersTitle);

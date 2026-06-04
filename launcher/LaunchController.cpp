@@ -36,13 +36,13 @@
 
 #include "LaunchController.h"
 #include "Application.h"
+#include "SuikaI18n.h"
 #include "launch/steps/PrintServers.h"
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/AccountList.h"
 
 #include "ui/InstanceWindow.h"
 #include "ui/dialogs/CustomMessageBox.h"
-#include "ui/dialogs/MSALoginDialog.h"
 #include "ui/dialogs/UnifiedPassLoginDialog.h"
 #include "ui/dialogs/ProfileSelectDialog.h"
 #include "ui/dialogs/ProfileSetupDialog.h"
@@ -58,6 +58,24 @@
 #include "launch/steps/TextPrint.h"
 #include "tasks/Task.h"
 #include "ui/dialogs/ChooseOfflineNameDialog.h"
+
+namespace {
+bool isAllowedServerAccount(const MinecraftAccountPtr& account)
+{
+    return account && account->accountType() == AccountType::Nide8;
+}
+
+MinecraftAccountPtr firstAllowedServerAccount(AccountList* accounts)
+{
+    for (int i = 0; i < accounts->count(); i++) {
+        auto account = accounts->at(i);
+        if (isAllowedServerAccount(account) && account->ownsMinecraft()) {
+            return account;
+        }
+    }
+    return nullptr;
+}
+}  // namespace
 
 LaunchController::LaunchController() = default;
 
@@ -92,12 +110,17 @@ void LaunchController::decideAccount()
         m_accountToUse = accounts->at(instanceAccountIndex);
     }
 
-    if (!accounts->anyAccountIsValid()) {
+    if (!isAllowedServerAccount(m_accountToUse)) {
+        m_accountToUse = firstAllowedServerAccount(accounts);
+    }
+
+    if (!m_accountToUse) {
         // Tell the user they need to log in at least one account in order to play.
         auto reply = CustomMessageBox::selectable(m_parentWidget, tr("No Accounts"),
-                                                  tr("In order to play Minecraft, you must have at least one Microsoft "
-                                                     "account which owns Minecraft logged in. "
-                                                     "Would you like to open the account manager to add an account now?"),
+                                                  SuikaI18n::translate("LaunchController",
+                                                                       "In order to play on this server, you must log in with Unified Pass. "
+                                                                       "Would you like to open the account manager to add an account now?",
+                                                                       "要进入西瓜幻想乡，请先使用统一通行证登录。是否现在打开账号管理添加账号？"),
                                                   QMessageBox::Information, QMessageBox::Yes | QMessageBox::No)
                          ->exec();
 
@@ -110,7 +133,7 @@ void LaunchController::decideAccount()
         }
     }
 
-    if (!m_accountToUse && accounts->anyAccountIsValid()) {
+    if (!m_accountToUse && firstAllowedServerAccount(accounts)) {
         // If no default account is set, ask the user which one to use.
         ProfileSelectDialog selectDialog(tr("Which account would you like to use?"), ProfileSelectDialog::GlobalDefaultCheckbox,
                                          m_parentWidget);
@@ -129,30 +152,24 @@ void LaunchController::decideAccount()
 
 LaunchDecision LaunchController::decideLaunchMode()
 {
-    if (!m_accountToUse || m_wantedLaunchMode == LaunchMode::Demo) {
-        m_actualLaunchMode = LaunchMode::Demo;
-        return LaunchDecision::Continue;
+    if (!isAllowedServerAccount(m_accountToUse)) {
+        CustomMessageBox::selectable(m_parentWidget, tr("No Accounts"),
+                                     SuikaI18n::translate("LaunchController", "Unified Pass account is required to launch.",
+                                                          "需要统一通行证账号才能启动。"),
+                                     QMessageBox::Information)
+            ->show();
+        return LaunchDecision::Abort;
     }
 
-    const auto* accounts = APPLICATION->accounts();
-    MinecraftAccountPtr accountToCheck = nullptr;
-
-    if (m_accountToUse->accountType() != AccountType::Offline) {
-        accountToCheck = m_accountToUse->ownsMinecraft() ? m_accountToUse : nullptr;
-    } else if (const auto defaultAccount = accounts->defaultAccount(); defaultAccount && defaultAccount->ownsMinecraft()) {
-        accountToCheck = defaultAccount;
-    } else {
-        for (int i = 0; i < accounts->count(); i++) {
-            if (const auto account = accounts->at(i); account->ownsMinecraft()) {
-                accountToCheck = account;
-                break;
-            }
-        }
-    }
+    MinecraftAccountPtr accountToCheck = m_accountToUse->ownsMinecraft() ? m_accountToUse : nullptr;
 
     if (!accountToCheck) {
-        m_actualLaunchMode = LaunchMode::Demo;
-        return LaunchDecision::Continue;
+        CustomMessageBox::selectable(m_parentWidget, tr("No Accounts"),
+                                     SuikaI18n::translate("LaunchController", "Unified Pass account is not ready to launch.",
+                                                          "统一通行证账号尚未准备好，无法启动。"),
+                                     QMessageBox::Information)
+            ->show();
+        return LaunchDecision::Abort;
     }
 
     auto state = accountToCheck->accountState();
@@ -196,9 +213,16 @@ LaunchDecision LaunchController::decideLaunchMode()
             reauthReason = tr("'%1' no longer exists on the servers").arg(accountToCheck->profileName());
             break;
         default:
-            m_actualLaunchMode =
-                state == AccountState::Online && m_wantedLaunchMode == LaunchMode::Normal ? LaunchMode::Normal : LaunchMode::Offline;
-            return LaunchDecision::Continue;  // All good to go
+            if (state == AccountState::Online) {
+                m_actualLaunchMode = LaunchMode::Normal;
+                return LaunchDecision::Continue;
+            }
+            CustomMessageBox::selectable(m_parentWidget, tr("Account refresh failed"),
+                                         SuikaI18n::translate("LaunchController", "Unified Pass account must be online to launch.",
+                                                              "统一通行证账号必须在线验证后才能启动。"),
+                                         QMessageBox::Information)
+                ->show();
+            return LaunchDecision::Abort;
     }
 
     if (reauthenticateAccount(accountToCheck, reauthReason)) {
@@ -334,23 +358,7 @@ bool LaunchController::reauthenticateAccount(const MinecraftAccountPtr& account,
     if (button == QMessageBox::StandardButton::Yes) {
         auto* accounts = APPLICATION->accounts();
         const bool isDefault = accounts->defaultAccount() == account;
-        if (account->accountType() == AccountType::MSA) {
-            auto newAccount = MSALoginDialog::newAccount(m_parentWidget);
-            if (newAccount != nullptr) {
-                accounts->removeAccount(accounts->index(accounts->findAccountByProfileId(account->profileId())));
-                accounts->addAccount(newAccount);
-
-                if (isDefault) {
-                    accounts->setDefaultAccount(newAccount);
-                }
-
-                if (m_accountToUse == account) {
-                    m_accountToUse = nullptr;
-                    decideAccount();
-                }
-                return true;
-            }
-        } else if (account->accountType() == AccountType::Nide8) {
+        if (account->accountType() == AccountType::Nide8) {
             auto newAccount = UnifiedPassLoginDialog::newAccount(m_parentWidget);
             if (newAccount != nullptr) {
                 accounts->removeAccount(accounts->index(accounts->findAccountByProfileId(account->profileId())));

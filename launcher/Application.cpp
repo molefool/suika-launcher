@@ -42,6 +42,7 @@
 
 #include "Application.h"
 #include "BuildConfig.h"
+#include "SuikaI18n.h"
 
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
@@ -297,7 +298,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
     setOrganizationName(BuildConfig.LAUNCHER_NAME);
     setOrganizationDomain(BuildConfig.LAUNCHER_DOMAIN);
     setApplicationName(BuildConfig.LAUNCHER_NAME);
-    setApplicationDisplayName(QString("%1 %2").arg(BuildConfig.LAUNCHER_DISPLAYNAME, BuildConfig.printableVersionString()));
+    setApplicationDisplayName(QString("%1 %2").arg(SuikaI18n::playerFacingName(), BuildConfig.printableVersionString()));
     setApplicationVersion(BuildConfig.printableVersionString() + "\n" + BuildConfig.GIT_COMMIT);
     setDesktopFileName(BuildConfig.LAUNCHER_APPID);
     m_startTime = QDateTime::currentDateTime();
@@ -308,7 +309,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 
     // Commandline parsing
     QCommandLineParser parser;
-    parser.setApplicationDescription(BuildConfig.LAUNCHER_DISPLAYNAME);
+    parser.setApplicationDescription(SuikaI18n::playerFacingName());
 
     parser.addOptions(
         { { { "d", "dir" }, "Use a custom path as application root (use '.' for current directory)", "directory" },
@@ -589,7 +590,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
     }
 
     {
-        qInfo() << qPrintable(BuildConfig.LAUNCHER_DISPLAYNAME + ", " + QString(BuildConfig.LAUNCHER_COPYRIGHT).replace("\n", ", "));
+        qInfo() << qPrintable(SuikaI18n::playerFacingName() + " (" + BuildConfig.LAUNCHER_DISPLAYNAME + "), " +
+                              QString(BuildConfig.LAUNCHER_COPYRIGHT).replace("\n", ", "));
         qInfo() << "Version                    :" << BuildConfig.printableVersionString();
         qInfo() << "Platform                   :" << BuildConfig.BUILD_PLATFORM;
         qInfo() << "Git commit                 :" << BuildConfig.GIT_COMMIT;
@@ -708,7 +710,8 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_settings->registerSetting("JsonEditor", QString());
 
         // Language
-        m_settings->registerSetting("Language", QString());
+        m_settings->registerSetting("Language", QStringLiteral("zh_CN"));
+        m_settings->registerSetting("SuikaLanguageDefaultApplied", false);
         m_settings->registerSetting("UseSystemLocale", false);
 
         // Console
@@ -909,7 +912,6 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
             m_globalSettingsProvider->addPage<MinecraftPage>();
             m_globalSettingsProvider->addPage<JavaPage>();
             m_globalSettingsProvider->addPage<AccountListPage>();
-            m_globalSettingsProvider->addPage<APIPage>();
             m_globalSettingsProvider->addPage<ExternalToolsPage>();
             m_globalSettingsProvider->addPage<ProxyPage>();
         }
@@ -1015,8 +1017,11 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 
     // load translations
     {
+        if (!m_settings->get("SuikaLanguageDefaultApplied").toBool()) {
+            m_settings->set("Language", QStringLiteral("zh_CN"));
+            m_settings->set("SuikaLanguageDefaultApplied", true);
+        }
         m_translations.reset(new TranslationsModel("translations"));
-        m_translations->downloadIndex();
         qInfo() << "Your language is" << m_translations->selectedLanguage();
         qInfo() << "<> Translations loaded.";
     }
@@ -1226,7 +1231,7 @@ bool Application::createSetupWizard()
     bool pasteInterventionRequired = settings()->get("PastebinURL") != "";
     bool validWidgets = m_themeManager->isValidApplicationTheme(settings()->get("ApplicationTheme").toString());
     bool validIcons = m_themeManager->isValidIconTheme(settings()->get("IconTheme").toString());
-    bool login = !m_accounts->anyAccountIsValid() && capabilities() & Application::SupportsMSA;
+    bool login = !m_accounts->anyAccountIsValid();
     bool themeInterventionRequired = !validWidgets || !validIcons;
     bool wizardRequired = javaRequired || languageRequired || pasteInterventionRequired || themeInterventionRequired || askjava || login;
     if (wizardRequired) {
@@ -1499,7 +1504,7 @@ JavaInstallList* Application::javalist()
 
 QIcon Application::logo()
 {
-    return QIcon(":/" + BuildConfig.LAUNCHER_SVGFILENAME);
+    return QIcon(":/suika/suika-icon.png");
 }
 
 bool Application::openJsonEditor(const QString& filename)
@@ -1533,11 +1538,13 @@ bool Application::launch(BaseInstance* instance,
         auto& controller = extras.controller;
         controller.reset(new LaunchController());
         controller->setInstance(instance);
-        controller->setLaunchMode(mode);
+        Q_UNUSED(mode);
+        Q_UNUSED(offlineName);
+        controller->setLaunchMode(LaunchMode::Normal);
         controller->setProfiler(profilers().value(instance->settings()->get("Profiler").toString(), nullptr).get());
         controller->setTargetToJoin(targetToJoin);
         controller->setAccountToUse(accountToUse);
-        controller->setOfflineName(offlineName);
+        controller->setOfflineName(QString());
         if (window) {
             controller->setParentWidget(window);
         } else if (m_mainWindow) {
@@ -1870,22 +1877,12 @@ QString Application::getJarPath(QString jarFile)
 
 QString Application::getMSAClientID()
 {
-    QString clientIDOverride = m_settings->get("MSAClientIDOverride").toString();
-    if (!clientIDOverride.isEmpty()) {
-        return clientIDOverride;
-    }
-
-    return BuildConfig.MSA_CLIENT_ID;
+    return {};
 }
 
 QString Application::getFlameAPIKey()
 {
-    QString keyOverride = m_settings->get("FlameKeyOverride").toString();
-    if (!keyOverride.isEmpty()) {
-        return keyOverride;
-    }
-
-    return BuildConfig.FLAME_API_KEY;
+    return {};
 }
 
 QString Application::getModrinthAPIToken()

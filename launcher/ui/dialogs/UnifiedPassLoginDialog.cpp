@@ -6,7 +6,6 @@
 
 #include "UnifiedPassLoginDialog.h"
 
-#include <QCoreApplication>
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
@@ -15,7 +14,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QLocale>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QRegularExpression>
@@ -23,17 +21,14 @@
 #include <QVBoxLayout>
 
 #include "DesktopServices.h"
+#include "SuikaI18n.h"
 #include "minecraft/auth/Nide8AuthConstants.h"
 #include "ui/dialogs/ProgressDialog.h"
 
 namespace {
 QString zhFallback(const char* source, const char* zhCN)
 {
-    const auto translated = QCoreApplication::translate("UnifiedPassLoginDialog", source);
-    if (translated == QString::fromLatin1(source) && QLocale::system().language() == QLocale::Chinese) {
-        return QString::fromUtf8(zhCN);
-    }
-    return translated;
+    return SuikaI18n::translate("UnifiedPassLoginDialog", source, zhCN);
 }
 }  // namespace
 
@@ -47,8 +42,7 @@ UnifiedPassLoginDialog::UnifiedPassLoginDialog(QWidget* parent) : QDialog(parent
 
     m_serverId = new QLineEdit(this);
     m_serverId->setText(QString(Nide8Auth::DefaultServerId));
-    m_serverId->setPlaceholderText(zhFallback("32-character server ID", "32 位服务器 ID"));
-    form->addRow(zhFallback("Server ID:", "服务器 ID："), m_serverId);
+    m_serverId->hide();
 
     m_username = new QLineEdit(this);
     m_username->setPlaceholderText(zhFallback("Passport username or linked QQ email", "通行证用户名或绑定的 QQ 邮箱"));
@@ -85,7 +79,6 @@ UnifiedPassLoginDialog::UnifiedPassLoginDialog(QWidget* parent) : QDialog(parent
     connect(m_registerButton, &QPushButton::clicked, this, &UnifiedPassLoginDialog::openRegisterPage);
     layout->addWidget(buttons);
 
-    connect(m_serverId, &QLineEdit::textChanged, this, &UnifiedPassLoginDialog::updateRegisterButton);
     updateRegisterButton();
 }
 
@@ -97,7 +90,7 @@ QString UnifiedPassLoginDialog::defaultAuthJarPath() const
 bool UnifiedPassLoginDialog::serverIdLooksValid() const
 {
     static const QRegularExpression serverIdRegex(QStringLiteral("^[0-9A-Fa-f]{32}$"));
-    return serverIdRegex.match(m_serverId->text().trimmed()).hasMatch();
+    return serverIdRegex.match(QString(Nide8Auth::DefaultServerId)).hasMatch();
 }
 
 void UnifiedPassLoginDialog::browseAuthJar()
@@ -113,12 +106,7 @@ void UnifiedPassLoginDialog::browseAuthJar()
 
 void UnifiedPassLoginDialog::openRegisterPage()
 {
-    if (!serverIdLooksValid()) {
-        QMessageBox::warning(this, zhFallback("Invalid server ID", "服务器 ID 无效"),
-                             zhFallback("Please enter a 32-character Unified Pass server ID first.", "请先输入 32 位统一通行证服务器 ID。"));
-        return;
-    }
-    DesktopServices::openUrl(QUrl(QString("https://login.mc-user.com:233/%1/loginreg").arg(m_serverId->text().trimmed())));
+    DesktopServices::openUrl(QUrl(QString("https://login.mc-user.com:233/%1/loginreg").arg(QString(Nide8Auth::DefaultServerId))));
 }
 
 void UnifiedPassLoginDialog::updateRegisterButton()
@@ -128,23 +116,18 @@ void UnifiedPassLoginDialog::updateRegisterButton()
 
 void UnifiedPassLoginDialog::accept()
 {
-    if (!serverIdLooksValid()) {
-        QMessageBox::warning(this, zhFallback("Invalid server ID", "服务器 ID 无效"),
-                             zhFallback("Unified Pass server ID must be 32 hexadecimal characters.",
-                                        "统一通行证服务器 ID 必须是 32 位十六进制字符。"));
-        return;
-    }
     if (m_username->text().isEmpty() || m_password->text().isEmpty()) {
         QMessageBox::warning(this, zhFallback("Missing credentials", "缺少登录信息"),
                              zhFallback("Please enter your Unified Pass username and password.", "请输入统一通行证用户名和密码。"));
         return;
     }
 
-    m_account = MinecraftAccount::createBlankNide8(m_serverId->text(), m_username->text(), m_password->text(), m_authJarPath->text());
+    m_account =
+        MinecraftAccount::createBlankNide8(QString(Nide8Auth::DefaultServerId), m_username->text(), m_password->text(), m_authJarPath->text());
     m_authflowTask = m_account->login();
 
     ProgressDialog progress(this);
-    progress.setSkipButton(true, tr("Cancel"));
+    progress.setSkipButton(true, zhFallback("Cancel", "取消"));
     progress.execWithTask(m_authflowTask.get());
 
     if (m_account->accountState() == AccountState::Online) {

@@ -10,6 +10,7 @@
 #include <QNetworkRequest>
 
 #include "Application.h"
+#include "SuikaI18n.h"
 #include "minecraft/auth/Nide8AuthConstants.h"
 #include "minecraft/auth/Parsers.h"
 #include "net/RawHeaderProxy.h"
@@ -22,27 +23,33 @@ QString normalizedRoot(QString root)
     }
     return root;
 }
+
+QString zhFallback(const char* source, const char* zhCN)
+{
+    return SuikaI18n::translate("Nide8ProfileStep", source, zhCN);
+}
 }  // namespace
 
 Nide8ProfileStep::Nide8ProfileStep(AccountData* data) : AuthStep(data) {}
 
 QString Nide8ProfileStep::describe()
 {
-    return tr("Fetching Unified Pass profile.");
+    return zhFallback("Fetching Unified Pass profile.", "正在获取统一通行证玩家资料。");
 }
 
 QUrl Nide8ProfileStep::profileUrl() const
 {
-    const auto serverId = m_data->nide8ServerId.trimmed().isEmpty() ? QString(Nide8Auth::DefaultServerId) : m_data->nide8ServerId.trimmed();
-    const auto fallbackRoot = QString("https://auth.mc-user.com:233/%1/").arg(serverId);
+    const auto fallbackRoot = QString("https://auth.mc-user.com:233/%1/").arg(QString(Nide8Auth::DefaultServerId));
     const auto root = normalizedRoot(m_data->nide8ApiRoot.isEmpty() ? fallbackRoot : m_data->nide8ApiRoot);
-    return QUrl(root).resolved(QUrl(QString("sessionserver/session/minecraft/profile/%1").arg(m_data->minecraftProfile.id)));
+    auto url = QUrl(root).resolved(QUrl(QString("sessionserver/session/minecraft/profile/%1").arg(m_data->minecraftProfile.id)));
+    url.setQuery(QStringLiteral("unsigned=false"));
+    return url;
 }
 
 void Nide8ProfileStep::perform()
 {
     if (m_data->minecraftProfile.id.isEmpty()) {
-        emit finished(AccountTaskState::STATE_WORKING, tr("Unified Pass profile ID is empty."));
+        emit finished(AccountTaskState::STATE_WORKING, zhFallback("Unified Pass profile ID is empty.", "统一通行证玩家 UUID 为空。"));
         return;
     }
 
@@ -62,11 +69,11 @@ void Nide8ProfileStep::profileFinished(QByteArray* response)
 {
     if (m_request->error() == QNetworkReply::NoError) {
         MinecraftProfile profile = m_data->minecraftProfile;
-        if (Parsers::parseMinecraftProfile(*response, profile)) {
+        if (Parsers::parseMinecraftProfileMojang(*response, profile)) {
             m_data->minecraftProfile.skin = profile.skin;
             m_data->minecraftProfile.currentCape = profile.currentCape;
             m_data->minecraftProfile.capes = profile.capes;
         }
     }
-    emit finished(AccountTaskState::STATE_WORKING, tr("Got Unified Pass profile."));
+    emit finished(AccountTaskState::STATE_WORKING, zhFallback("Got Unified Pass profile.", "已获取统一通行证玩家资料。"));
 }

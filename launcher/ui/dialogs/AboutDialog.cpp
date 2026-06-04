@@ -39,6 +39,7 @@
 #include "BuildConfig.h"
 #include "Markdown.h"
 #include "StringUtils.h"
+#include "SuikaI18n.h"
 #include "ui_AboutDialog.h"
 
 #include <net/NetJob.h>
@@ -77,7 +78,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
 {
     ui->setupUi(this);
 
-    QString launcherName = BuildConfig.LAUNCHER_DISPLAYNAME;
+    QString launcherName = SuikaI18n::playerFacingName();
 
     setWindowTitle(tr("About %1").arg(launcherName));
 
@@ -115,7 +116,7 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent), ui(new Ui::AboutDia
         ui->channelLabel->setVisible(false);
 
     QString urlText("<html><head/><body><p><a href=\"%1\">%1</a></p></body></html>");
-    ui->urlLabel->setText(urlText.arg(BuildConfig.LAUNCHER_GIT));
+    ui->urlLabel->setText(urlText.arg(QStringLiteral("https://www.suika.fun/")));
 
     ui->copyLabel->setText(BuildConfig.LAUNCHER_COPYRIGHT);
 

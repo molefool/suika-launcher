@@ -437,8 +437,10 @@ void ResourceDownloadDialog::setResourceMetadata(const std::shared_ptr<Metadata:
             selectPage(Modrinth::id());
             break;
         case ModPlatform::ResourceProvider::FLAME:
-            selectPage(Flame::id());
-            break;
+            CustomMessageBox::selectable(this, tr("Unsupported provider"), tr("CurseForge downloads are disabled in this launcher."),
+                                         QMessageBox::Information)
+                ->show();
+            return;
     }
 
     setWindowTitle(tr("Change %1 version").arg(meta->name));

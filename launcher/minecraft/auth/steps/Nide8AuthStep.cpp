@@ -14,6 +14,7 @@
 
 #include "Application.h"
 #include "BuildConfig.h"
+#include "SuikaI18n.h"
 #include "minecraft/auth/Nide8AuthConstants.h"
 #include "net/RawHeaderProxy.h"
 
@@ -39,10 +40,18 @@ QJsonObject objectFromJson(const QByteArray& data, QString& errorMessage)
     QJsonParseError jsonError;
     const auto doc = QJsonDocument::fromJson(data, &jsonError);
     if (jsonError.error != QJsonParseError::NoError || !doc.isObject()) {
-        errorMessage = QObject::tr("Unified Pass response could not be parsed as JSON: %1").arg(jsonError.errorString());
+        errorMessage =
+            SuikaI18n::translate("Nide8AuthStep", "Unified Pass response could not be parsed as JSON: %1",
+                                 "无法将统一通行证响应解析为 JSON：%1")
+                .arg(jsonError.errorString());
         return {};
     }
     return doc.object();
+}
+
+QString zhFallback(const char* source, const char* zhCN)
+{
+    return SuikaI18n::translate("Nide8AuthStep", source, zhCN);
 }
 }  // namespace
 
@@ -50,13 +59,13 @@ Nide8AuthStep::Nide8AuthStep(AccountData* data, bool refresh) : AuthStep(data), 
 
 QString Nide8AuthStep::describe()
 {
-    return m_refresh ? tr("Refreshing Unified Pass account.") : tr("Logging in with Unified Pass.");
+    return m_refresh ? zhFallback("Refreshing Unified Pass account.", "正在刷新统一通行证账号。")
+                     : zhFallback("Logging in with Unified Pass.", "正在使用统一通行证登录。");
 }
 
 QUrl Nide8AuthStep::defaultServiceRoot() const
 {
-    const auto serverId = m_data->nide8ServerId.trimmed().isEmpty() ? QString(Nide8Auth::DefaultServerId) : m_data->nide8ServerId.trimmed();
-    return QUrl(QString("https://auth.mc-user.com:233/%1/").arg(serverId));
+    return QUrl(QString("https://auth.mc-user.com:233/%1/").arg(QString(Nide8Auth::DefaultServerId)));
 }
 
 QUrl Nide8AuthStep::apiEndpoint(const QString& path) const
@@ -76,9 +85,8 @@ QString Nide8AuthStep::clientToken() const
 
 void Nide8AuthStep::perform()
 {
-    if (m_data->nide8ServerId.trimmed().isEmpty()) {
-        m_data->nide8ServerId = QString(Nide8Auth::DefaultServerId);
-    }
+    m_data->nide8ServerId = QString(Nide8Auth::DefaultServerId);
+    m_data->nide8ApiRoot.clear();
     requestMetadata();
 }
 
@@ -167,7 +175,7 @@ void Nide8AuthStep::authenticateFinished(QByteArray* response)
         emit finished(AccountTaskState::STATE_FAILED_HARD, errorMessage);
         return;
     }
-    emit finished(AccountTaskState::STATE_WORKING, tr("Logged in with Unified Pass."));
+    emit finished(AccountTaskState::STATE_WORKING, zhFallback("Logged in with Unified Pass.", "已使用统一通行证登录。"));
 }
 
 void Nide8AuthStep::requestValidate()
@@ -189,7 +197,7 @@ void Nide8AuthStep::requestValidate()
 void Nide8AuthStep::validateFinished(QByteArray* response)
 {
     if (m_upload->replyStatusCode() == 204 || m_upload->error() == QNetworkReply::NoError) {
-        emit finished(AccountTaskState::STATE_WORKING, tr("Unified Pass token is valid."));
+        emit finished(AccountTaskState::STATE_WORKING, zhFallback("Unified Pass token is valid.", "统一通行证令牌有效。"));
         return;
     }
     requestRefresh();
@@ -223,7 +231,7 @@ void Nide8AuthStep::refreshFinished(QByteArray* response)
         emit finished(AccountTaskState::STATE_FAILED_HARD, errorMessage);
         return;
     }
-    emit finished(AccountTaskState::STATE_WORKING, tr("Refreshed Unified Pass token."));
+    emit finished(AccountTaskState::STATE_WORKING, zhFallback("Refreshed Unified Pass token.", "已刷新统一通行证令牌。"));
 }
 
 bool Nide8AuthStep::parseTokenResponse(const QByteArray& response, QString& errorMessage)
@@ -240,7 +248,9 @@ bool Nide8AuthStep::parseTokenResponse(const QByteArray& response, QString& erro
     const auto profileName = selectedProfile.value("name").toString();
 
     if (accessToken.isEmpty() || profileId.isEmpty() || profileName.isEmpty()) {
-        errorMessage = responseErrorMessage(response, tr("Unified Pass response did not include a complete token/profile."));
+        errorMessage =
+            responseErrorMessage(response, zhFallback("Unified Pass response did not include a complete token/profile.",
+                                                     "统一通行证响应缺少完整的令牌或玩家资料。"));
         return false;
     }
 

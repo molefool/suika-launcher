@@ -41,6 +41,29 @@
 #include "console/WindowsConsole.h"
 #endif
 
+void initResources()
+{
+    Q_INIT_RESOURCE(multimc);
+    Q_INIT_RESOURCE(backgrounds);
+    Q_INIT_RESOURCE(documents);
+    Q_INIT_RESOURCE(suikalauncher);
+    Q_INIT_RESOURCE(translations);
+    Q_INIT_RESOURCE(suika);
+
+    Q_INIT_RESOURCE(pe_dark);
+    Q_INIT_RESOURCE(pe_light);
+    Q_INIT_RESOURCE(pe_blue);
+    Q_INIT_RESOURCE(pe_colored);
+    Q_INIT_RESOURCE(breeze_dark);
+    Q_INIT_RESOURCE(breeze_light);
+    Q_INIT_RESOURCE(OSX);
+    Q_INIT_RESOURCE(iOS);
+    Q_INIT_RESOURCE(flat);
+    Q_INIT_RESOURCE(flat_white);
+
+    Q_INIT_RESOURCE(shaders);
+}
+
 int main(int argc, char* argv[])
 {
 #if defined Q_OS_WIN32
@@ -48,30 +71,14 @@ int main(int argc, char* argv[])
     console::WindowsConsoleGuard _consoleGuard;
 #endif
 
+    initResources();
+
     // initialize Qt
     Application app(argc, argv);
     switch (app.status()) {
         case Application::StartingUp:
-        case Application::Initialized: {
-            Q_INIT_RESOURCE(multimc);
-            Q_INIT_RESOURCE(backgrounds);
-            Q_INIT_RESOURCE(documents);
-            Q_INIT_RESOURCE(suikalauncher);
-
-            Q_INIT_RESOURCE(pe_dark);
-            Q_INIT_RESOURCE(pe_light);
-            Q_INIT_RESOURCE(pe_blue);
-            Q_INIT_RESOURCE(pe_colored);
-            Q_INIT_RESOURCE(breeze_dark);
-            Q_INIT_RESOURCE(breeze_light);
-            Q_INIT_RESOURCE(OSX);
-            Q_INIT_RESOURCE(iOS);
-            Q_INIT_RESOURCE(flat);
-            Q_INIT_RESOURCE(flat_white);
-
-            Q_INIT_RESOURCE(shaders);
+        case Application::Initialized:
             return app.exec();
-        }
         case Application::Failed:
             return 1;
         case Application::Succeeded:

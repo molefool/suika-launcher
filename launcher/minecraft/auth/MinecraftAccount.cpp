@@ -82,7 +82,8 @@ MinecraftAccountPtr MinecraftAccount::createBlankNide8(const QString& serverId,
 {
     MinecraftAccountPtr account(new MinecraftAccount());
     account->data.type = AccountType::Nide8;
-    account->data.nide8ServerId = serverId.trimmed().isEmpty() ? QString(Nide8Auth::DefaultServerId) : serverId.trimmed();
+    Q_UNUSED(serverId);
+    account->data.nide8ServerId = QString(Nide8Auth::DefaultServerId);
     account->data.nide8Username = username;
     account->data.nide8Password = password;
     account->data.nide8AuthJarPath = authJarPath;
@@ -272,7 +273,7 @@ void MinecraftAccount::fillSession(AuthSessionPtr session)
     session->user_type = typeString();
     if (data.type == AccountType::Nide8) {
         session->uses_nide8 = true;
-        session->nide8_server_id = data.nide8ServerId;
+        session->nide8_server_id = QString(Nide8Auth::DefaultServerId);
         session->nide8_auth_jar_path = data.nide8AuthJarPath;
     }
     if (!session->access_token.isEmpty()) {

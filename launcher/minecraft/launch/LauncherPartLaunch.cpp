@@ -45,6 +45,7 @@
 #include "Application.h"
 #include "Commandline.h"
 #include "FileSystem.h"
+#include "SuikaI18n.h"
 #include "java/JavaVersion.h"
 #include "launch/LaunchTask.h"
 #include "minecraft/auth/Nide8AuthConstants.h"
@@ -82,6 +83,11 @@ QString firstExistingNide8AuthJar(const QString& configuredPath)
         }
     }
     return candidates.first();
+}
+
+QString zhFallback(const char* source, const char* zhCN)
+{
+    return SuikaI18n::translate("LauncherPartLaunch", source, zhCN);
 }
 }  // namespace
 
@@ -136,13 +142,15 @@ void LauncherPartLaunch::executeTask()
         const auto javaVersion = instance->getJavaVersion();
         if (!javaSupportsNide8(javaVersion)) {
             const auto reason =
-                tr("Unified Pass requires Java 8 update 101 or newer. The selected Java version is %1.").arg(javaVersion.toString());
+                zhFallback("Unified Pass requires Java 8 update 101 or newer. The selected Java version is %1.",
+                           "统一通行证需要 Java 8 update 101 或更高版本。当前选择的 Java 版本是 %1。")
+                    .arg(javaVersion.toString());
             emit logLine(reason + "\n", MessageLevel::Fatal);
             emitFailed(reason);
             return;
         }
         if (m_session->nide8_server_id.trimmed().isEmpty()) {
-            const auto reason = tr("Unified Pass server ID is empty.");
+            const auto reason = zhFallback("Unified Pass server ID is empty.", "统一通行证服务器 ID 为空。");
             emit logLine(reason + "\n", MessageLevel::Fatal);
             emitFailed(reason);
             return;
@@ -151,7 +159,7 @@ void LauncherPartLaunch::executeTask()
         const auto authJarPath = firstExistingNide8AuthJar(m_session->nide8_auth_jar_path);
         QFileInfo authJarInfo(authJarPath);
         if (!authJarInfo.exists()) {
-            const auto reason = tr("nide8auth.jar could not be found at %1.").arg(authJarPath);
+            const auto reason = zhFallback("nide8auth.jar could not be found at %1.", "找不到 nide8auth.jar：%1").arg(authJarPath);
             emit logLine(reason + "\n", MessageLevel::Fatal);
             emitFailed(reason);
             return;

@@ -37,15 +37,13 @@
 #include "TranslationsModel.h"
 
 #include <QDebug>
+#include <QFile>
+#include <QLibraryInfo>
 #include <functional>
 #include <memory>
 #include <utility>
 
-#include "BuildConfig.h"
 #include "FileSystem.h"
-#include "Json.h"
-#include "net/ChecksumValidator.h"
-#include "net/NetJob.h"
 
 #include "POTranslator.h"
 
@@ -53,6 +51,9 @@
 #include "settings/SettingsObject.h"
 
 static constexpr QLatin1String g_defaultLangCode("en_US");
+static constexpr QLatin1String g_legacyZhLangCode("zh");
+static constexpr QLatin1String g_zhLangCode("zh_CN");
+static constexpr QLatin1String g_bundledZhPath(":/translations/mmc_zh.qm");
 
 namespace {
 enum class FileType : std::uint8_t { None, Qm, Po };
@@ -70,7 +71,10 @@ QString getSystemLanguage()
 QString firstAvailablePreferredLanguage(const std::function<bool(const QString&)>& hasLanguage, const QString& configuredLanguage = {})
 {
     QStringList preferredLanguages;
-    for (const auto& language : { configuredLanguage, QStringLiteral("zh"), getSystemLocaleName(), getSystemLanguage(), QString(g_defaultLangCode) }) {
+    for (auto language : { configuredLanguage, QString(g_zhLangCode), getSystemLocaleName(), getSystemLanguage(), QString(g_defaultLangCode) }) {
+        if (language == g_legacyZhLangCode) {
+            language = g_zhLangCode;
+        }
         if (!language.isEmpty() && !preferredLanguages.contains(language)) {
             preferredLanguages.append(language);
         }
@@ -92,7 +96,9 @@ struct Language {
     QString languageName() const
     {
         QString result;
-        if (key == "ja_KANJI") {
+        if (key == g_zhLangCode) {
+            result = QStringLiteral("简体中文");
+        } else if (key == "ja_KANJI") {
             result = locale.nativeLanguageName() + u8" (漢字)";
         } else if (key == "es_UY") {
             result = u8"Español de Latinoamérica";
@@ -182,14 +188,6 @@ struct TranslationsModel::Private {
     std::unique_ptr<QTranslator> m_qtTranslator;
     std::unique_ptr<QTranslator> m_appTranslator;
 
-    Net::Download* m_indexTask = nullptr;
-    QString m_downloadingTranslation;
-    NetJob::Ptr m_downloadJob;
-    NetJob::Ptr m_indexJob;
-    QString m_nextDownload;
-
-    QFileSystemWatcher* watcher = nullptr;
-
     bool m_noLanguageSet = false;
 };
 
@@ -198,6 +196,10 @@ TranslationsModel::TranslationsModel(const QString& path, QObject* parent) : QAb
     d = std::make_unique<Private>();
     d->m_dir.setPath(path);
     d->m_selectedLanguage = APPLICATION->settings()->get("Language").toString();
+    if (d->m_selectedLanguage == g_legacyZhLangCode) {
+        d->m_selectedLanguage = g_zhLangCode;
+        APPLICATION->settings()->set("Language", d->m_selectedLanguage);
+    }
     d->m_requestedLanguage = d->m_selectedLanguage;
     FS::ensureFolderPathExists(path);
     reloadLocalFiles();
@@ -214,13 +216,12 @@ TranslationsModel::TranslationsModel(const QString& path, QObject* parent) : QAb
         if (findLanguageAsOptional(d->m_selectedLanguage).has_value()) {
             selectLanguage(d->m_selectedLanguage);
         } else {
-            selectLanguage(QString());
+            const auto language =
+                firstAvailablePreferredLanguage([this](const QString& key) { return findLanguageAsOptional(key).has_value(); }, d->m_selectedLanguage);
+            selectLanguage(language);
+            APPLICATION->settings()->set("Language", selectedLanguage());
         }
     }
-
-    d->watcher = new QFileSystemWatcher(this);
-    connect(d->watcher, &QFileSystemWatcher::directoryChanged, this, &TranslationsModel::translationDirChanged);
-    d->watcher->addPath(d->m_dir.canonicalPath());
 }
 
 TranslationsModel::~TranslationsModel() = default;
@@ -228,113 +229,23 @@ TranslationsModel::~TranslationsModel() = default;
 void TranslationsModel::translationDirChanged(const QString& path)
 {
     qDebug() << "Dir changed:" << path;
-    if (!d->m_noLanguageSet) {
-        reloadLocalFiles();
-    }
-    selectLanguage(selectedLanguage());
 }
 
 void TranslationsModel::indexReceived()
 {
-    qDebug() << "Got translations index!";
-    d->m_indexJob.reset();
-    reloadLocalFiles();
-
-    if (d->m_noLanguageSet) {
-        auto language =
-            firstAvailablePreferredLanguage([this](const QString& key) { return findLanguageAsOptional(key).has_value(); }, d->m_requestedLanguage);
-        selectLanguage(language);
-        APPLICATION->settings()->set("Language", selectedLanguage());
-        d->m_noLanguageSet = false;
-    }
-
-    if (selectedLanguage() != g_defaultLangCode) {
-        updateLanguage(selectedLanguage());
-    }
+    qDebug() << "Translation downloads are disabled; using bundled translations.";
 }
-
-namespace {
-void readIndex(const QString& path, QMap<QString, Language>& languages)
-{
-    QByteArray data;
-    try {
-        data = FS::read(path);
-    } catch ([[maybe_unused]] const Exception& e) {
-        qCritical() << "Translations Download Failed: index file not readable";
-        return;
-    }
-
-    try {
-        auto toplevelDoc = Json::requireDocument(data);
-        auto doc = Json::requireObject(toplevelDoc);
-        auto fileType = Json::requireString(doc, "file_type");
-        if (fileType != "MMC-TRANSLATION-INDEX") {
-            qCritical() << "Translations Download Failed: index file is of unknown file type" << fileType;
-            return;
-        }
-        auto version = Json::requireInteger(doc, "version");
-        if (version > 2) {
-            qCritical() << "Translations Download Failed: index file is of unknown format version" << fileType;
-            return;
-        }
-        auto langObjs = Json::requireObject(doc, "languages");
-        for (auto iter = langObjs.begin(); iter != langObjs.end(); ++iter) {
-            Language lang(iter.key());
-
-            auto langObj = Json::requireObject(iter.value());
-            lang.setTranslationStats(langObj["translated"].toInt(), langObj["untranslated"].toInt(), langObj["fuzzy"].toInt());
-            lang.fileName = Json::requireString(langObj, "file");
-            lang.fileSha1 = Json::requireString(langObj, "sha1");
-            lang.fileSize = Json::requireInteger(langObj, "size");
-
-            languages.insert(lang.key, lang);
-        }
-    } catch ([[maybe_unused]] Json::JsonException& e) {
-        qCritical() << "Translations Download Failed: index file could not be parsed as json";
-    }
-}
-}  // namespace
 
 void TranslationsModel::reloadLocalFiles()
 {
     QMap<QString, Language> languages = { { g_defaultLangCode, Language(g_defaultLangCode) } };
 
-    const auto indexPath = d->m_dir.absoluteFilePath("index_v2.json");
-    if (!QFileInfo::exists(indexPath)) {
-        downloadIndex();
-        return;
-    }
-    readIndex(indexPath, languages);
-    auto entries = d->m_dir.entryInfoList({ "mmc_*.qm", "*.po" }, QDir::Files | QDir::NoDotAndDotDot);
-    for (auto& entry : entries) {
-        auto completeSuffix = entry.completeSuffix();
-        QString langCode;
-        FileType fileType = FileType::None;
-        if (completeSuffix == "qm") {
-            langCode = entry.baseName().remove(0, 4);
-            fileType = FileType::Qm;
-        } else if (completeSuffix == "po") {
-            langCode = entry.baseName();
-            fileType = FileType::Po;
-        } else {
-            continue;
-        }
-
-        auto langIter = languages.find(langCode);
-        if (langIter != languages.end()) {
-            auto& language = *langIter;
-            // TODO: use std::to_underlying in C++23
-            if (static_cast<int>(fileType) > static_cast<int>(language.localFileType)) {
-                language.localFileType = fileType;
-            }
-        } else {
-            if (fileType == FileType::Po) {
-                Language localFound(langCode);
-                localFound.localFileType = FileType::Po;
-                languages.insert(langCode, localFound);
-            }
-        }
-    }
+    Language zh(g_zhLangCode);
+    zh.localFileType = FileType::Qm;
+    zh.updated = true;
+    zh.fileName = QString(g_bundledZhPath);
+    zh.setTranslationStats(1, 0, 0);
+    languages.insert(zh.key, zh);
 
     // changed and removed languages
     for (auto iter = d->m_languages.begin(); iter != d->m_languages.end();) {
@@ -480,6 +391,9 @@ void TranslationsModel::setUseSystemLocale(const bool useSystemLocale) const
 bool TranslationsModel::selectLanguage(QString key) const
 {
     QString& langCode = key;
+    if (langCode == g_legacyZhLangCode) {
+        langCode = g_zhLangCode;
+    }
     auto langPtr = findLanguageAsOptional(key);
 
     if (langCode.isEmpty()) {
@@ -549,7 +463,10 @@ bool TranslationsModel::selectLanguage(QString key) const
         }
     } else if (langPtr->localFileType == FileType::Qm) {
         d->m_appTranslator = std::make_unique<QTranslator>();
-        if (d->m_appTranslator->load("mmc_" + langCode, d->m_dir.path())) {
+        const bool loaded = langCode == g_zhLangCode
+                                ? d->m_appTranslator->load(QStringLiteral("mmc_zh"), QStringLiteral(":/translations"))
+                                : d->m_appTranslator->load("mmc_" + langCode, d->m_dir.path());
+        if (loaded) {
             qDebug() << "Loading Application Language File for" << langCode.toLocal8Bit().constData() << "...";
             if (!QCoreApplication::installTranslator(d->m_appTranslator.get())) {
                 qCritical() << "Installing Application Language File failed.";
@@ -558,6 +475,11 @@ bool TranslationsModel::selectLanguage(QString key) const
                 successful = true;
             }
         } else {
+            qWarning() << "Loading Application Language File failed for" << langCode << "from"
+                       << (langCode == g_zhLangCode ? QString(g_bundledZhPath) : FS::PathCombine(d->m_dir.path(), "mmc_" + langCode));
+            if (langCode == g_zhLangCode) {
+                qWarning() << "Bundled Simplified Chinese resource exists:" << QFile::exists(QString(g_bundledZhPath));
+            }
             d->m_appTranslator.reset();
         }
     } else {
@@ -583,96 +505,35 @@ QString TranslationsModel::selectedLanguage() const
 
 void TranslationsModel::downloadIndex()
 {
-    if (d->m_indexJob || d->m_downloadJob) {
-        return;
-    }
-    qDebug() << "Downloading Translations Index...";
-    d->m_indexJob.reset(new NetJob("Translations Index", APPLICATION->network()));
-    const MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("translations", "index_v2.json");
-    entry->setStale(true);
-    auto task = Net::Download::makeCached(QUrl(BuildConfig.TRANSLATION_FILES_URL + "index_v2.json"), entry);
-    d->m_indexTask = task.get();
-    d->m_indexJob->addNetAction(task);
-    d->m_indexJob->setAskRetry(false);
-    connect(d->m_indexJob.get(), &NetJob::failed, this, &TranslationsModel::indexFailed);
-    connect(d->m_indexJob.get(), &NetJob::succeeded, this, &TranslationsModel::indexReceived);
-    d->m_indexJob->start();
+    qDebug() << "Translation downloads are disabled; using bundled English and Simplified Chinese.";
 }
 
 void TranslationsModel::updateLanguage(const QString& key)
 {
-    if (key == g_defaultLangCode) {
-        qWarning() << "Cannot update builtin language" << key;
-        return;
-    }
-    auto found = findLanguageAsOptional(key);
-    if (!found.has_value()) {
-        qWarning() << "Cannot update invalid language" << key;
-        return;
-    }
-    if (!found->updated) {
-        downloadTranslation(key);
-    }
+    qDebug() << "Translation updates are disabled; ignoring update request for" << key;
 }
 
 void TranslationsModel::downloadTranslation(const QString& key)
 {
-    if (d->m_downloadJob) {
-        d->m_nextDownload = key;
-        return;
-    }
-    auto lang = findLanguageAsOptional(key);
-    if (!lang.has_value()) {
-        qWarning() << "Will not download an unknown translation" << key;
-        return;
-    }
-
-    d->m_downloadingTranslation = key;
-    const MetaEntryPtr entry = APPLICATION->metacache()->resolveEntry("translations", "mmc_" + key + ".qm");
-    entry->setStale(true);
-
-    auto dl = Net::Download::makeCached(QUrl(BuildConfig.TRANSLATION_FILES_URL + lang->fileName), entry);
-    dl->addValidator(new Net::ChecksumValidator(QCryptographicHash::Sha1, lang->fileSha1));
-    dl->setProgress(dl->getProgress(), lang->fileSize);
-
-    d->m_downloadJob.reset(new NetJob("Translation for " + key, APPLICATION->network()));
-    d->m_downloadJob->addNetAction(dl);
-    d->m_downloadJob->setAskRetry(false);
-
-    connect(d->m_downloadJob.get(), &NetJob::succeeded, this, &TranslationsModel::dlGood);
-    connect(d->m_downloadJob.get(), &NetJob::failed, this, &TranslationsModel::dlFailed);
-
-    d->m_downloadJob->start();
+    qDebug() << "Translation downloads are disabled; ignoring download request for" << key;
 }
 
 void TranslationsModel::downloadNext()
 {
-    if (!d->m_nextDownload.isEmpty()) {
-        downloadTranslation(d->m_nextDownload);
-        d->m_nextDownload.clear();
-    }
+    qDebug() << "Translation downloads are disabled; no next download.";
 }
 
 void TranslationsModel::dlFailed(const QString& reason)
 {
-    qCritical() << "Translations Download Failed:" << reason;
-    d->m_downloadJob.reset();
-    downloadNext();
+    qDebug() << "Ignoring translation download failure because downloads are disabled:" << reason;
 }
 
 void TranslationsModel::dlGood()
 {
-    qDebug() << "Got translation:" << d->m_downloadingTranslation;
-
-    if (d->m_downloadingTranslation == d->m_selectedLanguage) {
-        selectLanguage(d->m_selectedLanguage);
-    }
-    d->m_downloadJob.reset();
-    downloadNext();
+    qDebug() << "Ignoring translation download completion because downloads are disabled.";
 }
 
 void TranslationsModel::indexFailed(const QString& reason) const
 {
-    qCritical() << "Translations Index Download Failed:" << reason;
-    d->m_indexJob.reset();
+    qDebug() << "Ignoring translation index failure because downloads are disabled:" << reason;
 }

@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;Add Microsoft account&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:14pt; font-weight:600;&quot;&gt;添加统一通行证账号&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="textFormat">
       <enum>Qt::RichText</enum>
@@ -30,7 +30,7 @@
    <item>
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>In order to play Minecraft, you must have at least one Microsoft account logged in. Do you want to log in now?</string>
+      <string>要进入西瓜幻想乡，请先使用统一通行证登录。是否现在登录？</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -47,7 +47,7 @@
    <item>
     <widget class="QPushButton" name="pushButton">
      <property name="text">
-      <string>Add Microsoft account</string>
+      <string>添加统一通行证账号</string>
      </property>
     </widget>
    </item>

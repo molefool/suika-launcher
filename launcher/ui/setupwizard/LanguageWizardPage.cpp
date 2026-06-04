@@ -1,5 +1,6 @@
 #include "LanguageWizardPage.h"
 #include <Application.h>
+#include "SuikaI18n.h"
 #include "settings/SettingsObject.h"
 #include <translations/TranslationsModel.h>
 
@@ -42,6 +43,6 @@ bool LanguageWizardPage::validatePage()
 void LanguageWizardPage::retranslate()
 {
     setTitle(tr("Language"));
-    setSubTitle(tr("Select the language to use in %1").arg(BuildConfig.LAUNCHER_DISPLAYNAME));
+    setSubTitle(tr("Select the language to use in %1").arg(SuikaI18n::playerFacingName()));
     mainWidget->retranslate();
 }

@@ -7,7 +7,6 @@
 #include <QVBoxLayout>
 #include "Application.h"
 #include "settings/SettingsObject.h"
-#include "BuildConfig.h"
 #include "settings/Setting.h"
 #include "translations/TranslationsModel.h"
 
@@ -60,9 +59,9 @@ QString LanguageSelectionWidget::getSelectedLanguageKey() const
 
 void LanguageSelectionWidget::retranslate()
 {
-    QString text = tr("Don't see your language or the quality is poor?<br/><a href=\"%1\">Help us with translations!</a>")
-                       .arg(BuildConfig.TRANSLATIONS_URL);
-    helpUsLabel->setText(text);
+    const auto language = APPLICATION->settings()->get("Language").toString();
+    helpUsLabel->setText(language.startsWith(QLatin1String("zh")) ? QStringLiteral("Suika Launcher 目前仅支持英文和简体中文。")
+                                                                   : tr("Suika Launcher currently supports English and Simplified Chinese."));
     formatCheckbox->setText(tr("Use system regional standards"));
 }
 

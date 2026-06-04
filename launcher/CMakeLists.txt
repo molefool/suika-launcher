@@ -798,6 +798,7 @@ SET(LAUNCHER_SOURCES
     # Application base
     Application.h
     Application.cpp
+    SuikaI18n.h
     DataMigrationTask.h
     DataMigrationTask.cpp
     ApplicationMessage.h
@@ -1228,6 +1229,8 @@ qt_add_resources(LAUNCHER_RESOURCES
     resources/flat_white/flat_white.qrc
     resources/documents/documents.qrc
     resources/shaders/shaders.qrc
+    resources/translations/translations.qrc
+    resources/suika/suika.qrc
     "${CMAKE_CURRENT_BINARY_DIR}/../${Launcher_Branding_LogoQRC}"
 )
 
@@ -1352,6 +1355,16 @@ if(EXISTS "${NIDE8AUTH_JAR}")
     add_custom_command(TARGET ${Launcher_Name} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${NIDE8AUTH_JAR}" "$<TARGET_FILE_DIR:${Launcher_Name}>/nide8auth.jar"
         COMMENT "Copying nide8auth.jar next to the launcher executable"
+    )
+endif()
+
+if(APPLE)
+    add_custom_command(TARGET ${Launcher_Name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${Launcher_Name}>/../Resources"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_SOURCE_DIR}/${Launcher_Branding_ICNS}"
+                "$<TARGET_FILE_DIR:${Launcher_Name}>/../Resources/${Launcher_Name}.icns"
+        COMMENT "Copying Suika launcher icon into the macOS app bundle"
     )
 endif()
 

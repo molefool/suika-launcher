@@ -19,7 +19,7 @@ The original license files and attribution files are retained:
 
 ## Suika Launcher Modifications
 
-Suika Launcher modifications were added by Suika Launcher contributors beginning on 2026-06-04. Major modifications are listed in `FORK_NOTICE.md`.
+Suika Launcher modifications were added by Suika Launcher contributors beginning on 2026-06-04. Major modifications are listed in `FORK_NOTICE.md`, including the Suika server-only Unified Pass login flow, fixed server ID, simplified Chinese defaults and disabled third-party integrations.
 
 ## Unified Pass Runtime Agent
 

@@ -1,6 +1,6 @@
 #include "LoginWizardPage.h"
 #include "minecraft/auth/AccountList.h"
-#include "ui/dialogs/MSALoginDialog.h"
+#include "ui/dialogs/UnifiedPassLoginDialog.h"
 #include "ui_LoginWizardPage.h"
 
 #include "Application.h"
@@ -30,7 +30,7 @@ void LoginWizardPage::retranslate()
 void LoginWizardPage::on_pushButton_clicked()
 {
     wizard()->hide();
-    auto account = MSALoginDialog::newAccount(nullptr);
+    auto account = UnifiedPassLoginDialog::newAccount(nullptr);
     wizard()->show();
     if (account) {
         APPLICATION->accounts()->addAccount(account);
