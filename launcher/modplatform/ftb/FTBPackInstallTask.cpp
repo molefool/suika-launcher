@@ -42,6 +42,7 @@
 #include "Json.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
+#include "minecraft/SuikaServerList.h"
 #include "modplatform/flame/FileResolvingTask.h"
 #include "modplatform/flame/PackManifest.h"
 #include "net/ChecksumValidator.h"
@@ -283,6 +284,10 @@ void PackInstallTask::createInstance()
     instance.setManagedPack("ftb", QString::number(m_pack.id), m_pack.name, QString::number(m_version.id), m_version.name);
 
     instance.saveNow();
+
+    if (!Suika::ServerList::ensureDefaultServerEntry(instance.gameRoot())) {
+        qWarning() << "Failed to add Suika default server after FTB instance creation.";
+    }
 
     onCreateInstanceSucceeded();
 }

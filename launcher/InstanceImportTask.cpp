@@ -45,6 +45,7 @@
 #include "archive/ExtractZipTask.h"
 #include "icons/IconList.h"
 #include "icons/IconUtils.h"
+#include "minecraft/SuikaServerList.h"
 
 #include "modplatform/flame/FlameInstanceCreationTask.h"
 #include "modplatform/modrinth/ModrinthInstanceCreationTask.h"
@@ -334,7 +335,12 @@ void InstanceImportTask::processFlame()
 void InstanceImportTask::processTechnic()
 {
     shared_qobject_ptr<Technic::TechnicPackProcessor> packProcessor{ new Technic::TechnicPackProcessor };
-    connect(packProcessor.get(), &Technic::TechnicPackProcessor::succeeded, this, &InstanceImportTask::emitSucceeded);
+    connect(packProcessor.get(), &Technic::TechnicPackProcessor::succeeded, this, [this] {
+        if (!Suika::ServerList::ensureDefaultServerEntryForInstanceRoot(m_stagingPath)) {
+            qWarning() << "Failed to add Suika default server after Technic import.";
+        }
+        emitSucceeded();
+    });
     connect(packProcessor.get(), &Technic::TechnicPackProcessor::failed, this, &InstanceImportTask::emitFailed);
     packProcessor->run(m_globalSettings, name(), m_instIcon, m_stagingPath);
 }
@@ -359,6 +365,9 @@ void InstanceImportTask::processMultiMC()
         m_instIcon = instance.iconKey();
 
         installIcon(instance.instanceRoot(), m_instIcon);
+    }
+    if (!Suika::ServerList::ensureDefaultServerEntryForInstanceRoot(m_stagingPath)) {
+        qWarning() << "Failed to add Suika default server after MultiMC import.";
     }
     emitSucceeded();
 }

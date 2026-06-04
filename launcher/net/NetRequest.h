@@ -85,6 +85,7 @@ class NetRequest : public Task {
     auto handleRedirect() -> bool;
     void handleAutoRetry(int64_t delay);
     virtual QNetworkReply* getReply(QNetworkRequest&) = 0;
+    virtual bool prepareRetryAfterError(QNetworkReply::NetworkError error);
 
    protected slots:
     void onProgress(qint64 bytesReceived, qint64 bytesTotal);
@@ -110,6 +111,7 @@ class NetRequest : public Task {
     /// the network reply
     std::unique_ptr<QNetworkReply> m_reply;
     QByteArray m_errorResponse;
+    bool m_restartRequested = false;
 
     /// source URL
     QUrl m_url;

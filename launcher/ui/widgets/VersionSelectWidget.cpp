@@ -129,7 +129,19 @@ void VersionSelectWidget::closeEvent(QCloseEvent* event)
 
 void VersionSelectWidget::loadList(bool forceReload)
 {
+    if (!m_vlist) {
+        sneakyProgressBar->setHidden(true);
+        listView->setEmptyMode(VersionListView::String);
+        return;
+    }
+
     m_load_task = m_vlist->getLoadTask(forceReload);
+    if (!m_load_task) {
+        sneakyProgressBar->setHidden(true);
+        listView->setEmptyMode(VersionListView::String);
+        return;
+    }
+
     connect(m_load_task.get(), &Task::succeeded, this, &VersionSelectWidget::onTaskSucceeded);
     connect(m_load_task.get(), &Task::failed, this, &VersionSelectWidget::onTaskFailed);
     connect(m_load_task.get(), &Task::progress, this, &VersionSelectWidget::changeProgress);

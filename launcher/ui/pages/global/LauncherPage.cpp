@@ -41,14 +41,21 @@
 
 #include <QDir>
 #include <QFileDialog>
+#include <QButtonGroup>
+#include <QGroupBox>
+#include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QRadioButton>
 #include <QTextCharFormat>
+#include <QVBoxLayout>
 
 #include <FileSystem.h>
 #include "Application.h"
 #include "BuildConfig.h"
 #include "DesktopServices.h"
+#include "SuikaI18n.h"
+#include "net/DownloadMirror.h"
 #include "settings/SettingsObject.h"
 #include "ui/themes/ITheme.h"
 #include "ui/themes/ThemeManager.h"
@@ -68,6 +75,7 @@ enum InstSortMode {
 LauncherPage::LauncherPage(QWidget* parent) : QWidget(parent), ui(new Ui::LauncherPage)
 {
     ui->setupUi(this);
+    setupDownloadSourceControls();
 
     ui->sortingModeGroup->setId(ui->sortByNameBtn, Sort_Name);
     ui->sortingModeGroup->setId(ui->sortLastLaunchedBtn, Sort_LastLaunch);
@@ -189,6 +197,43 @@ void LauncherPage::on_metadataEnableBtn_clicked()
     ui->metadataWarningLabel->setHidden(ui->metadataEnableBtn->isChecked());
 }
 
+void LauncherPage::setupDownloadSourceControls()
+{
+    m_downloadSourceBox = new QGroupBox(this);
+    auto* layout = new QVBoxLayout(m_downloadSourceBox);
+
+    m_downloadSourceDescription = new QLabel(m_downloadSourceBox);
+    m_downloadSourceDescription->setWordWrap(true);
+    layout->addWidget(m_downloadSourceDescription);
+
+    m_downloadSourceBMCLAPIBtn = new QRadioButton(m_downloadSourceBox);
+    m_downloadSourceOfficialBtn = new QRadioButton(m_downloadSourceBox);
+    layout->addWidget(m_downloadSourceBMCLAPIBtn);
+    layout->addWidget(m_downloadSourceOfficialBtn);
+
+    m_downloadSourceGroup = new QButtonGroup(this);
+    m_downloadSourceGroup->addButton(m_downloadSourceBMCLAPIBtn);
+    m_downloadSourceGroup->addButton(m_downloadSourceOfficialBtn);
+
+    ui->verticalLayout_8->insertWidget(2, m_downloadSourceBox);
+    retranslateDownloadSourceControls();
+}
+
+void LauncherPage::retranslateDownloadSourceControls()
+{
+    if (!m_downloadSourceBox) {
+        return;
+    }
+
+    m_downloadSourceBox->setTitle(SuikaI18n::translate("LauncherPage", "Download Source", "下载源"));
+    m_downloadSourceDescription->setText(SuikaI18n::translate(
+        "LauncherPage",
+        "Choose where Minecraft game files, libraries, Java runtimes, and supported loader files are downloaded from.",
+        "选择 Minecraft 游戏文件、依赖库、Java 运行时和受支持加载器文件的下载来源。"));
+    m_downloadSourceBMCLAPIBtn->setText(SuikaI18n::translate("LauncherPage", "BMCLAPI China mirror", "BMCLAPI 中国下载源"));
+    m_downloadSourceOfficialBtn->setText(SuikaI18n::translate("LauncherPage", "Official default source", "官方默认源"));
+}
+
 void LauncherPage::applySettings()
 {
     auto* s = APPLICATION->settings();
@@ -205,6 +250,9 @@ void LauncherPage::applySettings()
     s->set("NumberOfConcurrentDownloads", ui->numberOfConcurrentDownloadsSpinBox->value());
     s->set("NumberOfManualRetries", ui->numberOfManualRetriesSpinBox->value());
     s->set("RequestTimeout", ui->timeoutSecondsSpinBox->value());
+    s->set("DownloadSource",
+           Net::DownloadMirror::sourceToString(m_downloadSourceBMCLAPIBtn->isChecked() ? Net::DownloadMirror::Source::BMCLAPI
+                                                                                       : Net::DownloadMirror::Source::Official));
 
     // Console settings
     s->set("ConsoleMaxLines", ui->lineLimitSpinBox->value());
@@ -263,6 +311,9 @@ void LauncherPage::loadSettings()
     ui->numberOfConcurrentDownloadsSpinBox->setValue(s->get("NumberOfConcurrentDownloads").toInt());
     ui->numberOfManualRetriesSpinBox->setValue(s->get("NumberOfManualRetries").toInt());
     ui->timeoutSecondsSpinBox->setValue(s->get("RequestTimeout").toInt());
+    const auto downloadSource = Net::DownloadMirror::sourceFromString(s->get("DownloadSource").toString());
+    m_downloadSourceBMCLAPIBtn->setChecked(downloadSource == Net::DownloadMirror::Source::BMCLAPI);
+    m_downloadSourceOfficialBtn->setChecked(downloadSource == Net::DownloadMirror::Source::Official);
 
     // Console settings
     ui->lineLimitSpinBox->setValue(s->get("ConsoleMaxLines").toInt());
@@ -303,4 +354,5 @@ void LauncherPage::loadSettings()
 void LauncherPage::retranslate()
 {
     ui->retranslateUi(this);
+    retranslateDownloadSourceControls();
 }

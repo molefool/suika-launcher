@@ -6,6 +6,7 @@
 #include "Application.h"
 #include "InstanceTask.h"
 #include "minecraft/MinecraftLoadAndCheck.h"
+#include "minecraft/SuikaServerList.h"
 #include "tasks/SequentialTask.h"
 
 bool InstanceCreationTask::abort()
@@ -81,6 +82,10 @@ void InstanceCreationTask::executeTask()
             emitFailed(tr("Failed to remove old conflicting files."));
             return;
         }
+    }
+
+    if (!Suika::ServerList::ensureDefaultServerEntry(m_instance->gameRoot())) {
+        qWarning() << "Failed to add Suika default server after instance creation.";
     }
 
     if (!m_abort) {

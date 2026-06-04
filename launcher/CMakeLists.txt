@@ -119,6 +119,8 @@ set(NET_SOURCES
     net/ChecksumValidator.h
     net/Download.cpp
     net/Download.h
+    net/DownloadMirror.cpp
+    net/DownloadMirror.h
     net/DummySink.h
     net/FileSink.cpp
     net/FileSink.h
@@ -213,6 +215,8 @@ set(MINECRAFT_SOURCES
     # Logging
     minecraft/Logging.h
     minecraft/Logging.cpp
+    minecraft/SuikaServerList.cpp
+    minecraft/SuikaServerList.h
 
     # Minecraft support
     minecraft/auth/AccountData.cpp
@@ -648,6 +652,8 @@ set(PRISMUPDATER_SOURCES
     net/ChecksumValidator.h
     net/Download.cpp
     net/Download.h
+    net/DownloadMirror.cpp
+    net/DownloadMirror.h
     net/FileSink.cpp
     net/FileSink.h
     net/HttpMetaCache.cpp
@@ -1357,6 +1363,15 @@ if(EXISTS "${NIDE8AUTH_JAR}")
         COMMENT "Copying nide8auth.jar next to the launcher executable"
     )
 endif()
+
+add_dependencies(${Launcher_Name} JavaCheck NewLaunch NewLaunchLegacy)
+add_custom_command(TARGET ${Launcher_Name} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${Launcher_Name}>/jars"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/jars/JavaCheck.jar" "$<TARGET_FILE_DIR:${Launcher_Name}>/jars/JavaCheck.jar"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/jars/NewLaunch.jar" "$<TARGET_FILE_DIR:${Launcher_Name}>/jars/NewLaunch.jar"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/jars/NewLaunchLegacy.jar" "$<TARGET_FILE_DIR:${Launcher_Name}>/jars/NewLaunchLegacy.jar"
+    COMMENT "Copying launcher runtime jars into the app bundle"
+)
 
 if(APPLE)
     add_custom_command(TARGET ${Launcher_Name} POST_BUILD

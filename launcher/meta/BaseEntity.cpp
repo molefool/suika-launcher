@@ -21,6 +21,7 @@
 #include "modplatform/helpers/HashUtils.h"
 #include "net/ApiDownload.h"
 #include "net/ChecksumValidator.h"
+#include "net/DownloadMirror.h"
 #include "net/HttpMetaCache.h"
 #include "net/Mode.h"
 #include "net/NetJob.h"
@@ -30,11 +31,46 @@
 #include "BuildConfig.h"
 #include "tasks/Task.h"
 
+#include <QJsonArray>
+
 namespace Meta {
+
+enum class ResponseTransform { None, MinecraftVersionManifest };
+
+QJsonObject minecraftManifestToVersionList(const QJsonObject& obj)
+{
+    QJsonObject out;
+    out.insert("formatVersion", 1);
+    out.insert("name", "Minecraft");
+    out.insert("uid", "net.minecraft");
+
+    const auto latest = obj.value("latest").toObject();
+    const auto recommendedRelease = latest.value("release").toString();
+
+    QJsonArray versions;
+    const auto rawVersions = obj.value("versions").toArray();
+    for (const auto& rawVersion : rawVersions) {
+        const auto versionObj = rawVersion.toObject();
+        const auto versionId = versionObj.value("id").toString();
+        if (versionId.isEmpty()) {
+            continue;
+        }
+
+        QJsonObject version;
+        version.insert("version", versionId);
+        version.insert("type", versionObj.value("type").toString());
+        version.insert("releaseTime", versionObj.value("releaseTime").toString());
+        version.insert("recommended", versionId == recommendedRelease);
+        versions.append(version);
+    }
+
+    out.insert("versions", versions);
+    return out;
+}
 
 class ParsingValidator : public Net::Validator {
    public: /* con/des */
-    ParsingValidator(BaseEntity* entity) : m_entity(entity) {};
+    ParsingValidator(BaseEntity* entity, ResponseTransform transform) : m_entity(entity), m_transform(transform) {};
     virtual ~ParsingValidator() = default;
 
    public: /* methods */
@@ -59,6 +95,9 @@ class ParsingValidator : public Net::Validator {
         try {
             auto doc = Json::requireDocument(m_data, fname);
             auto obj = Json::requireObject(doc, fname);
+            if (m_transform == ResponseTransform::MinecraftVersionManifest) {
+                obj = minecraftManifestToVersionList(obj);
+            }
             m_entity->parse(obj);
             return true;
         } catch (const Exception& e) {
@@ -70,6 +109,7 @@ class ParsingValidator : public Net::Validator {
    private: /* data */
     QByteArray m_data;
     BaseEntity* m_entity;
+    ResponseTransform m_transform = ResponseTransform::None;
 };
 
 QUrl BaseEntity::url() const
@@ -153,12 +193,25 @@ void BaseEntityLoadTask::executeTask()
     auto wasLoadedOffline = m_entity->m_load_status != BaseEntity::LoadStatus::NotLoaded && m_mode == Net::Mode::Offline;
     // if has is not present allways fetch from remote(e.g. the main index file), else only fetch if hash doesn't match
     auto wasLoadedRemote = m_entity->m_sha256.isEmpty() ? m_entity->m_load_status == BaseEntity::LoadStatus::Remote : hashMatches;
-    if (wasLoadedOffline || (wasLoadedRemote && !m_force_reload)) {
+    auto canUseCachedMainIndex = m_entity->m_sha256.isEmpty() && m_entity->localFilename() == QLatin1String("index.json") &&
+                                 m_entity->m_load_status != BaseEntity::LoadStatus::NotLoaded && !m_force_reload;
+    if (wasLoadedOffline || canUseCachedMainIndex || (wasLoadedRemote && !m_force_reload)) {
+        if (canUseCachedMainIndex) {
+            qInfo() << "Using cached launcher metadata index:" << fname;
+        }
         emitSucceeded();
         return;
     }
     m_task.reset(new NetJob(QObject::tr("Download of meta file %1").arg(m_entity->localFilename()), APPLICATION->network()));
     auto url = m_entity->url();
+    ResponseTransform responseTransform = ResponseTransform::None;
+    if (Net::DownloadMirror::currentSource() == Net::DownloadMirror::Source::BMCLAPI &&
+        m_entity->localFilename() == QLatin1String("net.minecraft/index.json")) {
+        const auto originalUrl = url;
+        url = QUrl("https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json");
+        responseTransform = ResponseTransform::MinecraftVersionManifest;
+        qInfo() << "Using BMCLAPI metadata mirror:" << originalUrl.toString() << "->" << url.toString();
+    }
     auto entry = APPLICATION->metacache()->resolveEntry("meta", m_entity->localFilename());
     if (m_force_reload) {
         // clear validators so manual refreshes fetch a fresh body
@@ -171,9 +224,9 @@ void BaseEntityLoadTask::executeTask()
      * The validator parses the file and loads it into the object.
      * If that fails, the file is not written to storage.
      */
-    if (!m_entity->m_sha256.isEmpty())
+    if (!m_entity->m_sha256.isEmpty() && responseTransform == ResponseTransform::None)
         dl->addValidator(new Net::ChecksumValidator(QCryptographicHash::Algorithm::Sha256, m_entity->m_sha256));
-    dl->addValidator(new ParsingValidator(m_entity));
+    dl->addValidator(new ParsingValidator(m_entity, responseTransform));
     m_task->addNetAction(dl);
     m_task->setAskRetry(false);
     connect(m_task.get(), &Task::failed, this, &BaseEntityLoadTask::emitFailed);

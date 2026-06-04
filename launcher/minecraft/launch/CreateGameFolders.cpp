@@ -2,6 +2,7 @@
 #include "FileSystem.h"
 #include "launch/LaunchTask.h"
 #include "minecraft/MinecraftInstance.h"
+#include "minecraft/SuikaServerList.h"
 
 CreateGameFolders::CreateGameFolders(LaunchTask* parent) : LaunchStep(parent) {}
 
@@ -18,6 +19,10 @@ void CreateGameFolders::executeTask()
     // HACK: this is a workaround for MCL-3732 - 'server-resource-packs' folder is created.
     if (!FS::ensureFolderPathExists(FS::PathCombine(instance->gameRoot(), "server-resource-packs"))) {
         emit logLine("Couldn't create the 'server-resource-packs' folder", MessageLevel::Error);
+    }
+
+    if (!Suika::ServerList::ensureDefaultServerEntry(instance->gameRoot())) {
+        emit logLine("Couldn't add the default Suika multiplayer server", MessageLevel::Warning);
     }
     emitSucceeded();
 }

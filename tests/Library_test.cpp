@@ -40,6 +40,7 @@
 #include <minecraft/Library.h>
 #include <minecraft/MojangVersionFormat.h>
 #include <minecraft/OneSixVersionFormat.h>
+#include <net/DownloadMirror.h>
 #include <net/HttpMetaCache.h>
 
 class LibraryTest : public QObject {
@@ -75,6 +76,7 @@ class LibraryTest : public QObject {
         cache->addBase("libraries", QDir("libraries").absolutePath());
         dataDir = QDir(QFINDTESTDATA("testdata/Libraries")).absolutePath();
     }
+    void cleanup() { Net::DownloadMirror::clearSourceOverrideForTests(); }
     void test_legacy()
     {
         RuntimeContext r = dummyContext();
@@ -267,6 +269,25 @@ class LibraryTest : public QObject {
             QCOMPARE(dls.size(), 0);
             QCOMPARE(failedFiles, {});
         }
+    }
+    void test_onenine_download_source()
+    {
+        RuntimeContext r = dummyContext("linux");
+        auto test = readMojangJson(QFINDTESTDATA("testdata/Libraries/lib-simple.json"));
+
+        QStringList failedFiles;
+        Net::DownloadMirror::setSourceOverrideForTests(Net::DownloadMirror::Source::Official);
+        auto officialDownloads = test->getDownloads(r, cache.get(), failedFiles, QString());
+        QCOMPARE(officialDownloads.size(), 1);
+        QCOMPARE(failedFiles, {});
+        QCOMPARE(officialDownloads[0]->url(), QUrl("https://libraries.minecraft.net/com/paulscode/codecwav/20101023/codecwav-20101023.jar"));
+
+        failedFiles.clear();
+        Net::DownloadMirror::setSourceOverrideForTests(Net::DownloadMirror::Source::BMCLAPI);
+        auto bmclapiDownloads = test->getDownloads(r, cache.get(), failedFiles, QString());
+        QCOMPARE(bmclapiDownloads.size(), 1);
+        QCOMPARE(failedFiles, {});
+        QCOMPARE(bmclapiDownloads[0]->url(), QUrl("https://bmclapi2.bangbang93.com/maven/com/paulscode/codecwav/20101023/codecwav-20101023.jar"));
     }
     void test_onenine_local_override()
     {

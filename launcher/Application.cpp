@@ -46,6 +46,7 @@
 
 #include "DataMigrationTask.h"
 #include "java/JavaInstallList.h"
+#include "net/DownloadMirror.h"
 #include "net/PasteUpload.h"
 #include "tasks/Task.h"
 #include "tools/GenericProfiler.h"
@@ -654,6 +655,7 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
         m_settings->registerSetting("NumberOfConcurrentDownloads", 6);
         m_settings->registerSetting("NumberOfManualRetries", 1);
         m_settings->registerSetting("RequestTimeout", 60);
+        m_settings->registerSetting("DownloadSource", Net::DownloadMirror::sourceToString(Net::DownloadMirror::Source::BMCLAPI));
 
         QString defaultMonospace;
         int defaultSize = 11;
@@ -871,6 +873,13 @@ Application::Application(int& argc, char** argv) : QApplication(argc, argv)
 
             // Legacy FML libs URL
             resetIfInvalid(m_settings->registerSetting("LegacyFMLLibsURLOverride", "").get());
+        }
+        {
+            const auto downloadSource = m_settings->get("DownloadSource").toString();
+            if (downloadSource != Net::DownloadMirror::sourceToString(Net::DownloadMirror::Source::Official) &&
+                downloadSource != Net::DownloadMirror::sourceToString(Net::DownloadMirror::Source::BMCLAPI)) {
+                m_settings->reset("DownloadSource");
+            }
         }
 
         m_settings->registerSetting("MetaRefreshOnLaunch", true);

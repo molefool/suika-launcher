@@ -43,6 +43,7 @@
 #include <QFileInfo>
 #include <QLocale>
 #include <QNetworkReply>
+#include <QTimer>
 #include <QUrl>
 #include <cstdint>
 #include <memory>
@@ -190,6 +191,10 @@ void NetRequest::downloadError(QNetworkReply::NetworkError error)
                 return;
             }
         }
+        if (prepareRetryAfterError(error)) {
+            m_restartRequested = true;
+            return;
+        }
         // error happened during download.
         qCCritical(logCat) << getUid().toString() << "Failed" << m_url.toString() << "with error" << error;
         if (m_reply)
@@ -261,7 +266,11 @@ auto NetRequest::handleRedirect() -> bool
 
     m_url = QUrl(redirect.toString());
     qCDebug(logCat) << getUid().toString() << "Following redirect to" << m_url.toString();
-    executeTask();
+    if (auto* oldReply = m_reply.release()) {
+        disconnect(oldReply, nullptr, this, nullptr);
+        oldReply->deleteLater();
+    }
+    QTimer::singleShot(0, this, &NetRequest::executeTask);
 
     return true;
 }
@@ -290,6 +299,18 @@ void NetRequest::downloadFinished()
 {
     // currently waiting for retry
     if (m_retryTimer.isActive()) {
+        return;
+    }
+
+    if (m_restartRequested) {
+        m_restartRequested = false;
+        m_sink->abort();
+        if (auto* oldReply = m_reply.release()) {
+            disconnect(oldReply, nullptr, this, nullptr);
+            oldReply->deleteLater();
+        }
+        m_errorResponse.clear();
+        QTimer::singleShot(0, this, &NetRequest::executeTask);
         return;
     }
 
@@ -341,6 +362,16 @@ void NetRequest::downloadFinished()
     m_state = m_sink->finalize(*m_reply.get());
     if (m_state != State::Succeeded) {
         qCDebug(logCat) << getUid().toString() << "Request failed to finalize:" << m_url.toString();
+        if (prepareRetryAfterError(m_reply->error())) {
+            m_sink->abort();
+            if (auto* oldReply = m_reply.release()) {
+                disconnect(oldReply, nullptr, this, nullptr);
+                oldReply->deleteLater();
+            }
+            m_errorResponse.clear();
+            QTimer::singleShot(0, this, &NetRequest::executeTask);
+            return;
+        }
         m_sink->abort();
         m_failReason = m_sink->failReason();
         emit failed(m_sink->failReason());
@@ -407,6 +438,11 @@ void NetRequest::enableAutoRetry(bool enable)
     } else {
         m_options &= ~static_cast<int>(Option::AutoRetry);
     }
+}
+
+bool NetRequest::prepareRetryAfterError(QNetworkReply::NetworkError)
+{
+    return false;
 }
 
 }  // namespace Net

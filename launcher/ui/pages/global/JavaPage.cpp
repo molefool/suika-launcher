@@ -63,11 +63,11 @@ JavaPage::JavaPage(QWidget* parent) : QWidget(parent), ui(new Ui::JavaPage)
     ui->setupUi(this);
 
     if (BuildConfig.JAVA_DOWNLOADER_ENABLED) {
-        ui->managedJavaList->initialize(new JavaInstallList(this, true));
+        ui->managedJavaList->initialize(new JavaInstallList(this, false));
         ui->managedJavaList->setResizeOn(2);
         ui->managedJavaList->selectCurrent();
-        ui->managedJavaList->setEmptyString(tr("No managed Java versions are installed"));
-        ui->managedJavaList->setEmptyErrorString(tr("Couldn't load the managed Java list!"));
+        ui->managedJavaList->setEmptyString(tr("No Java versions are installed"));
+        ui->managedJavaList->setEmptyErrorString(tr("Couldn't load the Java list!"));
     } else
         ui->tabWidget->tabBar()->hide();
 }

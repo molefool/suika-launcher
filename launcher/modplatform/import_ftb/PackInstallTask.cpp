@@ -24,6 +24,7 @@
 #include "FileSystem.h"
 #include "minecraft/MinecraftInstance.h"
 #include "minecraft/PackProfile.h"
+#include "minecraft/SuikaServerList.h"
 #include "modplatform/ResourceAPI.h"
 #include "modplatform/import_ftb/PackHelpers.h"
 #include "settings/INISettingsObject.h"
@@ -97,6 +98,9 @@ void PackInstallTask::copySettings()
             m_instIcon = "ftb_logo";
         }
         instance.setIconKey(m_instIcon);
+    }
+    if (!Suika::ServerList::ensureDefaultServerEntry(instance.gameRoot())) {
+        qWarning() << "Failed to add Suika default server after FTB import.";
     }
     emitSucceeded();
 }

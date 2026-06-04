@@ -42,6 +42,10 @@
 #include "java/JavaChecker.h"
 #include "ui/pages/BasePage.h"
 
+class QButtonGroup;
+class QGroupBox;
+class QLabel;
+class QRadioButton;
 class QTextCharFormat;
 class SettingsObject;
 
@@ -64,6 +68,8 @@ class LauncherPage : public QWidget, public BasePage {
     void retranslate() override;
 
    private:
+    void setupDownloadSourceControls();
+    void retranslateDownloadSourceControls();
     void applySettings();
     void loadSettings();
 
@@ -78,4 +84,9 @@ class LauncherPage : public QWidget, public BasePage {
 
    private:
     Ui::LauncherPage* ui;
+    QGroupBox* m_downloadSourceBox = nullptr;
+    QLabel* m_downloadSourceDescription = nullptr;
+    QRadioButton* m_downloadSourceBMCLAPIBtn = nullptr;
+    QRadioButton* m_downloadSourceOfficialBtn = nullptr;
+    QButtonGroup* m_downloadSourceGroup = nullptr;
 };

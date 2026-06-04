@@ -45,15 +45,32 @@
 
 #include "ByteArraySink.h"
 #include "ChecksumValidator.h"
+#include "DownloadMirror.h"
 #include "MetaCacheSink.h"
+#include "net/Logging.h"
 
 namespace Net {
+
+namespace {
+QUrl applyDownloadMirror(const QUrl& url)
+{
+    auto rewritten = DownloadMirror::rewriteUrl(url);
+    if (rewritten != url) {
+        qCInfo(taskDownloadLogC) << "Using BMCLAPI download mirror:" << url.toString() << "->" << rewritten.toString();
+    }
+    return rewritten;
+}
+}  // namespace
 
 #if defined(LAUNCHER_APPLICATION)
 auto Download::makeCached(QUrl url, MetaEntryPtr entry, Options options) -> Download::Ptr
 {
     auto dl = makeShared<Download>();
-    dl->m_url = url;
+    dl->m_mirrorOriginalUrl = url;
+    dl->m_url = applyDownloadMirror(url);
+    if (dl->m_url == url) {
+        dl->m_mirrorOriginalUrl = QUrl();
+    }
     dl->setObjectName(QString("CACHE:") + url.toString());
     dl->m_options = options;
     auto md5Node = new ChecksumValidator(QCryptographicHash::Md5);
@@ -66,7 +83,11 @@ auto Download::makeCached(QUrl url, MetaEntryPtr entry, Options options) -> Down
 auto Download::makeByteArray(QUrl url, Options options) -> std::pair<Download::Ptr, QByteArray*>
 {
     auto dl = makeShared<Download>();
-    dl->m_url = url;
+    dl->m_mirrorOriginalUrl = url;
+    dl->m_url = applyDownloadMirror(url);
+    if (dl->m_url == url) {
+        dl->m_mirrorOriginalUrl = QUrl();
+    }
     dl->setObjectName(QString("BYTES:") + url.toString());
     dl->m_options = options;
 
@@ -80,7 +101,11 @@ auto Download::makeByteArray(QUrl url, Options options) -> std::pair<Download::P
 auto Download::makeFile(QUrl url, QString path, Options options) -> Download::Ptr
 {
     auto dl = makeShared<Download>();
-    dl->m_url = url;
+    dl->m_mirrorOriginalUrl = url;
+    dl->m_url = applyDownloadMirror(url);
+    if (dl->m_url == url) {
+        dl->m_mirrorOriginalUrl = QUrl();
+    }
     dl->setObjectName(QString("FILE:") + url.toString());
     dl->m_options = options;
     dl->m_sink.reset(new FileSink(path));
@@ -90,5 +115,19 @@ auto Download::makeFile(QUrl url, QString path, Options options) -> Download::Pt
 QNetworkReply* Download::getReply(QNetworkRequest& request)
 {
     return m_network->get(request);
+}
+
+bool Download::prepareRetryAfterError(QNetworkReply::NetworkError error)
+{
+    if (error == QNetworkReply::OperationCanceledError || m_mirrorFallbackAttempted || !m_mirrorOriginalUrl.isValid() ||
+        m_url == m_mirrorOriginalUrl) {
+        return false;
+    }
+
+    qCInfo(taskDownloadLogC) << "BMCLAPI download mirror failed; retrying official source:" << m_url.toString() << "->"
+                             << m_mirrorOriginalUrl.toString() << "error" << error << "HTTP status" << replyStatusCode();
+    m_mirrorFallbackAttempted = true;
+    m_url = m_mirrorOriginalUrl;
+    return true;
 }
 }  // namespace Net

@@ -67,5 +67,10 @@ class Download : public NetRequest {
 
    protected:
     virtual QNetworkReply* getReply(QNetworkRequest&) override;
+    bool prepareRetryAfterError(QNetworkReply::NetworkError error) override;
+
+   private:
+    QUrl m_mirrorOriginalUrl;
+    bool m_mirrorFallbackAttempted = false;
 };
 }  // namespace Net
