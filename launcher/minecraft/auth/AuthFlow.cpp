@@ -9,6 +9,8 @@
 #include "minecraft/auth/steps/MSADeviceCodeStep.h"
 #include "minecraft/auth/steps/MSAStep.h"
 #include "minecraft/auth/steps/MinecraftProfileStep.h"
+#include "minecraft/auth/steps/Nide8AuthStep.h"
+#include "minecraft/auth/steps/Nide8ProfileStep.h"
 #include "minecraft/auth/steps/XboxAuthorizationStep.h"
 #include "minecraft/auth/steps/XboxUserStep.h"
 #include "tasks/Task.h"
@@ -36,6 +38,10 @@ AuthFlow::AuthFlow(AccountData* data, Action action) : Task(), m_data(data)
         m_steps.append(makeShared<LauncherLoginStep>(m_data));
         m_steps.append(makeShared<EntitlementsStep>(m_data));
         m_steps.append(makeShared<MinecraftProfileStep>(m_data));
+        m_steps.append(makeShared<GetSkinStep>(m_data));
+    } else if (data->type == AccountType::Nide8) {
+        m_steps.append(makeShared<Nide8AuthStep>(m_data, action == Action::Refresh));
+        m_steps.append(makeShared<Nide8ProfileStep>(m_data));
         m_steps.append(makeShared<GetSkinStep>(m_data));
     }
     changeState(AccountTaskState::STATE_CREATED);

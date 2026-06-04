@@ -43,6 +43,7 @@
 #include "ui/InstanceWindow.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/MSALoginDialog.h"
+#include "ui/dialogs/UnifiedPassLoginDialog.h"
 #include "ui/dialogs/ProfileSelectDialog.h"
 #include "ui/dialogs/ProfileSetupDialog.h"
 #include "ui/dialogs/ProgressDialog.h"
@@ -335,7 +336,22 @@ bool LaunchController::reauthenticateAccount(const MinecraftAccountPtr& account,
         const bool isDefault = accounts->defaultAccount() == account;
         if (account->accountType() == AccountType::MSA) {
             auto newAccount = MSALoginDialog::newAccount(m_parentWidget);
+            if (newAccount != nullptr) {
+                accounts->removeAccount(accounts->index(accounts->findAccountByProfileId(account->profileId())));
+                accounts->addAccount(newAccount);
 
+                if (isDefault) {
+                    accounts->setDefaultAccount(newAccount);
+                }
+
+                if (m_accountToUse == account) {
+                    m_accountToUse = nullptr;
+                    decideAccount();
+                }
+                return true;
+            }
+        } else if (account->accountType() == AccountType::Nide8) {
+            auto newAccount = UnifiedPassLoginDialog::newAccount(m_parentWidget);
             if (newAccount != nullptr) {
                 accounts->removeAccount(accounts->index(accounts->findAccountByProfileId(account->profileId())));
                 accounts->addAccount(newAccount);

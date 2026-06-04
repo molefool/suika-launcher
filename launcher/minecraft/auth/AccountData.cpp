@@ -291,6 +291,8 @@ bool AccountData::resumeStateFromV3(QJsonObject data)
         type = AccountType::MSA;
     } else if (typeS == "Offline") {
         type = AccountType::Offline;
+    } else if (typeS == "Nide8") {
+        type = AccountType::Nide8;
     } else {
         qWarning() << "Failed to parse account data: type is not recognized.";
         return false;
@@ -304,6 +306,14 @@ bool AccountData::resumeStateFromV3(QJsonObject data)
         msaToken = tokenFromJSONV3(data, "msa");
         userToken = tokenFromJSONV3(data, "utoken");
         mojangservicesToken = tokenFromJSONV3(data, "xrp-mc");
+    } else if (type == AccountType::Nide8) {
+        nide8ServerId = data.value("nide8-server-id").toString();
+        nide8ApiRoot = data.value("nide8-api-root").toString();
+        nide8Username = data.value("nide8-username").toString();
+        nide8AuthJarPath = data.value("nide8-auth-jar-path").toString();
+        nide8ServerName = data.value("nide8-server-name").toString();
+        nide8ServerAddress = data.value("nide8-server-address").toString();
+        nide8JarHash = data.value("nide8-jar-hash").toString();
     }
 
     yggdrasilToken = tokenFromJSONV3(data, "ygg");
@@ -335,6 +345,15 @@ QJsonObject AccountData::saveState() const
         tokenToJSONV3(output, mojangservicesToken, "xrp-mc");
     } else if (type == AccountType::Offline) {
         output["type"] = "Offline";
+    } else if (type == AccountType::Nide8) {
+        output["type"] = "Nide8";
+        output["nide8-server-id"] = nide8ServerId;
+        output["nide8-api-root"] = nide8ApiRoot;
+        output["nide8-username"] = nide8Username;
+        output["nide8-auth-jar-path"] = nide8AuthJarPath;
+        output["nide8-server-name"] = nide8ServerName;
+        output["nide8-server-address"] = nide8ServerAddress;
+        output["nide8-jar-hash"] = nide8JarHash;
     }
 
     tokenToJSONV3(output, yggdrasilToken, "ygg");

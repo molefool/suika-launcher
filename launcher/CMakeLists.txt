@@ -224,6 +224,7 @@ set(MINECRAFT_SOURCES
     minecraft/auth/AuthStep.h
     minecraft/auth/MinecraftAccount.cpp
     minecraft/auth/MinecraftAccount.h
+    minecraft/auth/Nide8AuthConstants.h
     minecraft/auth/Parsers.cpp
     minecraft/auth/Parsers.h
 
@@ -234,6 +235,10 @@ set(MINECRAFT_SOURCES
     minecraft/auth/steps/EntitlementsStep.h
     minecraft/auth/steps/GetSkinStep.cpp
     minecraft/auth/steps/GetSkinStep.h
+    minecraft/auth/steps/Nide8AuthStep.cpp
+    minecraft/auth/steps/Nide8AuthStep.h
+    minecraft/auth/steps/Nide8ProfileStep.cpp
+    minecraft/auth/steps/Nide8ProfileStep.h
     minecraft/auth/steps/LauncherLoginStep.cpp
     minecraft/auth/steps/LauncherLoginStep.h
     minecraft/auth/steps/MinecraftProfileStep.cpp
@@ -1067,6 +1072,8 @@ SET(LAUNCHER_SOURCES
     ui/dialogs/ImportResourceDialog.h
     ui/dialogs/MSALoginDialog.cpp
     ui/dialogs/MSALoginDialog.h
+    ui/dialogs/UnifiedPassLoginDialog.cpp
+    ui/dialogs/UnifiedPassLoginDialog.h
     ui/dialogs/NetworkJobFailedDialog.cpp
     ui/dialogs/NetworkJobFailedDialog.h
     ui/dialogs/NewComponentDialog.cpp
@@ -1339,6 +1346,15 @@ target_link_libraries(${Launcher_Name} Launcher_logic)
 if(DEFINED Launcher_APP_BINARY_NAME)
     set_target_properties(${Launcher_Name} PROPERTIES OUTPUT_NAME "${Launcher_APP_BINARY_NAME}")
 endif()
+
+set(NIDE8AUTH_JAR "${CMAKE_SOURCE_DIR}/third_party/nide8auth/nide8auth.jar")
+if(EXISTS "${NIDE8AUTH_JAR}")
+    add_custom_command(TARGET ${Launcher_Name} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${NIDE8AUTH_JAR}" "$<TARGET_FILE_DIR:${Launcher_Name}>/nide8auth.jar"
+        COMMENT "Copying nide8auth.jar next to the launcher executable"
+    )
+endif()
+
 if(DEFINED Launcher_BINARY_RPATH)
     SET_TARGET_PROPERTIES(${Launcher_Name} PROPERTIES INSTALL_RPATH "${Launcher_BINARY_RPATH}")
 endif()
@@ -1355,6 +1371,10 @@ install(TARGETS ${Launcher_Name}
     RUNTIME DESTINATION ${BINARY_DEST_DIR} COMPONENT Runtime
     FRAMEWORK DESTINATION ${FRAMEWORK_DEST_DIR} COMPONENT Runtime
 )
+
+if(EXISTS "${NIDE8AUTH_JAR}")
+    install(FILES "${NIDE8AUTH_JAR}" DESTINATION ${BINARY_DEST_DIR} COMPONENT Runtime)
+endif()
 
 # Deploy PDBs
 if(CMAKE_CXX_LINKER_SUPPORTS_PDB)

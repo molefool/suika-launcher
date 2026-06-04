@@ -45,6 +45,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonParseError>
+#include <QLocale>
 #include <QTextStream>
 #include <QTimer>
 
@@ -346,6 +347,13 @@ QVariant AccountList::data(const QModelIndex& index, int role) const
                         case AccountType::Offline: {
                             return tr("Offline", "Account type");
                         }
+                        case AccountType::Nide8: {
+                            const auto label = tr("Unified Pass", "Account type");
+                            if (label == QStringLiteral("Unified Pass") && QLocale::system().language() == QLocale::Chinese) {
+                                return QStringLiteral("统一通行证");
+                            }
+                            return label;
+                        }
                     }
                     return tr("Unknown", "Account type");
                 }
@@ -388,7 +396,14 @@ QVariant AccountList::headerData(int section, [[maybe_unused]] Qt::Orientation o
                 case ProfileNameColumn:
                     return tr("Minecraft username associated with the account.");
                 case TypeColumn:
-                    return tr("Type of the account (MSA or Offline)");
+                    if (QLocale::system().language() == QLocale::Chinese) {
+                        const auto tooltip = tr("Type of the account (MSA, Unified Pass or Offline)");
+                        if (tooltip == QStringLiteral("Type of the account (MSA, Unified Pass or Offline)")) {
+                            return QStringLiteral("账号类型（MSA、统一通行证或离线）");
+                        }
+                        return tooltip;
+                    }
+                    return tr("Type of the account (MSA, Unified Pass or Offline)");
                 case StatusColumn:
                     return tr("Current status of the account.");
                 default:

@@ -47,6 +47,12 @@ run/
 
 .cache/
 
+# Local runtime-agent copies. The reviewed redistribution copy lives under
+# third_party/nide8auth and is installed next to the launcher executable.
+/nide8auth.jar
+/**/nide8auth.local.jar
+!third_party/nide8auth/nide8auth.jar
+
 # Nix/NixOS
 .direnv/
 ## Used when manually invoking stdenv phases

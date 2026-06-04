@@ -35,18 +35,55 @@
 
 #include "LauncherPartLaunch.h"
 
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include <QRegularExpression>
 #include <QStandardPaths>
+#include <QStringList>
 
 #include "Application.h"
 #include "Commandline.h"
 #include "FileSystem.h"
+#include "java/JavaVersion.h"
 #include "launch/LaunchTask.h"
+#include "minecraft/auth/Nide8AuthConstants.h"
 #include "minecraft/MinecraftInstance.h"
 
 #ifdef Q_OS_LINUX
 #include "gamemode_client.h"
 #endif
+
+namespace {
+bool javaSupportsNide8(const JavaVersion& version)
+{
+    if (version.major() > 8) {
+        return true;
+    }
+    if (version.major() == 8) {
+        return version.security() >= 101;
+    }
+    return false;
+}
+
+QString firstExistingNide8AuthJar(const QString& configuredPath)
+{
+    QStringList candidates;
+    if (!configuredPath.isEmpty()) {
+        candidates << configuredPath;
+    }
+    candidates << QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QString(Nide8Auth::AuthJarFileName));
+    candidates << QDir::current().absoluteFilePath(QString(Nide8Auth::AuthJarFileName));
+    candidates << QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("third_party/nide8auth/nide8auth.jar");
+
+    for (const auto& candidate : candidates) {
+        if (QFileInfo::exists(candidate)) {
+            return QFileInfo(candidate).absoluteFilePath();
+        }
+    }
+    return candidates.first();
+}
+}  // namespace
 
 LauncherPartLaunch::LauncherPartLaunch(LaunchTask* parent)
     : LaunchStep(parent)
@@ -94,6 +131,42 @@ void LauncherPartLaunch::executeTask()
 
     m_launchScript = instance->createLaunchScript(m_session, m_targetToJoin);
     QStringList args = instance->javaArguments();
+
+    if (m_session && m_session->uses_nide8) {
+        const auto javaVersion = instance->getJavaVersion();
+        if (!javaSupportsNide8(javaVersion)) {
+            const auto reason =
+                tr("Unified Pass requires Java 8 update 101 or newer. The selected Java version is %1.").arg(javaVersion.toString());
+            emit logLine(reason + "\n", MessageLevel::Fatal);
+            emitFailed(reason);
+            return;
+        }
+        if (m_session->nide8_server_id.trimmed().isEmpty()) {
+            const auto reason = tr("Unified Pass server ID is empty.");
+            emit logLine(reason + "\n", MessageLevel::Fatal);
+            emitFailed(reason);
+            return;
+        }
+
+        const auto authJarPath = firstExistingNide8AuthJar(m_session->nide8_auth_jar_path);
+        QFileInfo authJarInfo(authJarPath);
+        if (!authJarInfo.exists()) {
+            const auto reason = tr("nide8auth.jar could not be found at %1.").arg(authJarPath);
+            emit logLine(reason + "\n", MessageLevel::Fatal);
+            emitFailed(reason);
+            return;
+        }
+
+        QString agentPath = authJarInfo.absoluteFilePath();
+        if (agentPath.contains('=')) {
+            agentPath = QDir(instance->gameRoot()).relativeFilePath(agentPath);
+        }
+
+        args << "-javaagent:" + QDir::toNativeSeparators(agentPath) + "=" + m_session->nide8_server_id.trimmed();
+        args << "-Dnide8auth.client=true";
+        args << "-Dauthlibinjector.side=client";
+    }
+
     QString allArgs = args.join(" ");
     emit logLine("Java arguments:\n  " + m_parent->censorPrivateInfo(allArgs) + "\n", MessageLevel::Launcher);
 

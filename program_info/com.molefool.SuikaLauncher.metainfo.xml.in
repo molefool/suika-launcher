@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>@Launcher_AppID@</id>
+  <name>@Launcher_DisplayName@</name>
+  <summary>Custom Minecraft launcher with Unified Pass support</summary>
+  <developer id="com.molefool">
+    <name>Suika Launcher Contributors</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <description>
+    <p>Suika Launcher is a modified Prism Launcher fork focused on Unified Pass/Nide8 authentication for server distributions.</p>
+    <p>This fork is not Prism Launcher and is not endorsed by or affiliated with the Prism Launcher project.</p>
+    <p>Features:</p>
+    <ul>
+      <li>Easily install game modifications, such as Fabric, Forge and Quilt</li>
+      <li>Easily install and update modpacks from the Launcher</li>
+      <li>Control your Java settings, and enable Mangohud or Gamemode with a toggle</li>
+      <li>Manage worlds and resource packs from the launcher</li>
+      <li>See logs and other details easily through a dashboard</li>
+      <li>Kill Minecraft in case of a crash/freeze</li>
+      <li>Isolate Minecraft instances to keep everything clean</li>
+      <li>Install and update mods directly from the launcher</li>
+      <li>Customize the launcher with themes, and more</li>
+      <li>And cat :3</li>
+    </ul>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The main launcher window</caption>
+      <image type="source" width="1030" height="764">https://prismlauncher.org/img/screenshots/LauncherDark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Modpack installation</caption>
+      <image type="source" width="1126" height="850">https://prismlauncher.org/img/screenshots/ModpackInstallDark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Modpack updating</caption>
+      <image type="source" width="930" height="677">https://prismlauncher.org/img/screenshots/ModpackUpdateDark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Mod installation</caption>
+      <image type="source" width="848" height="558">https://prismlauncher.org/img/screenshots/ModInstallDark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Mod updating</caption>
+      <image type="source" width="860" height="748">https://prismlauncher.org/img/screenshots/ModUpdateDark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Instance management</caption>
+      <image type="source" width="960" height="659">https://prismlauncher.org/img/screenshots/PropertiesDark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Launcher window</caption>
+      <image type="source" width="1042" height="754">https://prismlauncher.org/img/screenshots/LauncherCatDark.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Customization</caption>
+      <image type="source" width="1040" height="752">https://prismlauncher.org/img/screenshots/CustomizeDark.png</image>
+    </screenshot>
+  </screenshots>
+  <releases>
+    <release version="@Launcher_VERSION_NAME@" date="@Launcher_BUILD_TIMESTAMP@"></release>
+  </releases>
+  <url type="homepage">https://github.com/molefool/suika-launcher</url>
+  <url type="bugtracker">https://github.com/molefool/suika-launcher/issues</url>
+  <url type="help">https://github.com/molefool/suika-launcher</url>
+  <url type="contact">https://github.com/molefool/suika-launcher/issues</url>
+  <url type="vcs-browser">https://github.com/molefool/suika-launcher</url>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">moderate</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+  <launchable type="desktop-id">@Launcher_AppID@.desktop</launchable>
+</component>

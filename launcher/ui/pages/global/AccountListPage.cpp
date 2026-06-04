@@ -38,7 +38,9 @@
 #include "ui/dialogs/skins/SkinManageDialog.h"
 #include "ui_AccountListPage.h"
 
+#include <QCoreApplication>
 #include <QItemSelectionModel>
+#include <QLocale>
 #include <QMenu>
 #include <QPushButton>
 
@@ -47,12 +49,25 @@
 #include "ui/dialogs/ChooseOfflineNameDialog.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/MSALoginDialog.h"
+#include "ui/dialogs/UnifiedPassLoginDialog.h"
 
 #include "Application.h"
+
+namespace {
+QString zhFallback(const char* source, const char* zhCN)
+{
+    const auto translated = QCoreApplication::translate("AccountListPage", source);
+    if (translated == QString::fromLatin1(source) && QLocale::system().language() == QLocale::Chinese) {
+        return QString::fromUtf8(zhCN);
+    }
+    return translated;
+}
+}  // namespace
 
 AccountListPage::AccountListPage(QWidget* parent) : QMainWindow(parent), ui(new Ui::AccountListPage)
 {
     ui->setupUi(this);
+    ui->actionAddUnifiedPass->setText(zhFallback("Add &Unified Pass", "添加统一通行证"));
     ui->listView->setEmptyString(
         tr("Welcome!\n"
            "If you're new here, you can select the \"Add Microsoft\" button to link your Microsoft account."));
@@ -98,6 +113,7 @@ AccountListPage::~AccountListPage()
 void AccountListPage::retranslate()
 {
     ui->retranslateUi(this);
+    ui->actionAddUnifiedPass->setText(zhFallback("Add &Unified Pass", "添加统一通行证"));
 }
 
 void AccountListPage::ShowContextMenu(const QPoint& pos)
@@ -111,6 +127,7 @@ void AccountListPage::changeEvent(QEvent* event)
 {
     if (event->type() == QEvent::LanguageChange) {
         ui->retranslateUi(this);
+        ui->actionAddUnifiedPass->setText(zhFallback("Add &Unified Pass", "添加统一通行证"));
     }
     QMainWindow::changeEvent(event);
 }
@@ -130,6 +147,17 @@ void AccountListPage::listChanged()
 void AccountListPage::on_actionAddMicrosoft_triggered()
 {
     auto account = MSALoginDialog::newAccount(this);
+    if (account) {
+        m_accounts->addAccount(account);
+        if (m_accounts->count() == 1) {
+            m_accounts->setDefaultAccount(account);
+        }
+    }
+}
+
+void AccountListPage::on_actionAddUnifiedPass_triggered()
+{
+    auto account = UnifiedPassLoginDialog::newAccount(this);
     if (account) {
         m_accounts->addAccount(account);
         if (m_accounts->count() == 1) {

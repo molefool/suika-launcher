@@ -52,6 +52,7 @@
 
 #include "minecraft/auth/AccountData.h"
 #include "minecraft/auth/AuthFlow.h"
+#include "minecraft/auth/Nide8AuthConstants.h"
 
 MinecraftAccount::MinecraftAccount(QObject* parent) : QObject(parent)
 {
@@ -71,6 +72,20 @@ MinecraftAccountPtr MinecraftAccount::createBlankMSA()
 {
     MinecraftAccountPtr account(new MinecraftAccount());
     account->data.type = AccountType::MSA;
+    return account;
+}
+
+MinecraftAccountPtr MinecraftAccount::createBlankNide8(const QString& serverId,
+                                                       const QString& username,
+                                                       const QString& password,
+                                                       const QString& authJarPath)
+{
+    MinecraftAccountPtr account(new MinecraftAccount());
+    account->data.type = AccountType::Nide8;
+    account->data.nide8ServerId = serverId.trimmed().isEmpty() ? QString(Nide8Auth::DefaultServerId) : serverId.trimmed();
+    account->data.nide8Username = username;
+    account->data.nide8Password = password;
+    account->data.nide8AuthJarPath = authJarPath;
     return account;
 }
 
@@ -168,6 +183,10 @@ void MinecraftAccount::authFailed(QString reason)
                 data.msaToken.refresh_token = QString();
                 data.msaToken.validity = Validity::None;
                 data.validity_ = Validity::None;
+            } else if (accountType() == AccountType::Nide8) {
+                data.yggdrasilToken.token = QString();
+                data.yggdrasilToken.validity = Validity::None;
+                data.validity_ = Validity::None;
             } else {
                 data.yggdrasilToken.token = QString();
                 data.yggdrasilToken.validity = Validity::None;
@@ -249,8 +268,13 @@ void MinecraftAccount::fillSession(AuthSessionPtr session)
     session->uuid = data.profileId();
     if (session->uuid.isEmpty())
         session->uuid = uuidFromUsername(session->player_name).toString(QUuid::Id128);
-    // 'legacy' or 'mojang', depending on account type
+    // 'msa', 'mojang' or 'offline', depending on account type
     session->user_type = typeString();
+    if (data.type == AccountType::Nide8) {
+        session->uses_nide8 = true;
+        session->nide8_server_id = data.nide8ServerId;
+        session->nide8_auth_jar_path = data.nide8AuthJarPath;
+    }
     if (!session->access_token.isEmpty()) {
         session->session = "token:" + data.accessToken() + ":" + data.profileId();
     } else {

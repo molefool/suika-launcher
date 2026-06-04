@@ -85,6 +85,11 @@ class MinecraftAccount : public QObject, public Usable {
 
     static MinecraftAccountPtr createBlankMSA();
 
+    static MinecraftAccountPtr createBlankNide8(const QString& serverId,
+                                                const QString& username,
+                                                const QString& password,
+                                                const QString& authJarPath);
+
     static MinecraftAccountPtr createOffline(const QString& username);
 
     static MinecraftAccountPtr loadFromJsonV3(const QJsonObject& json);
@@ -128,6 +133,9 @@ class MinecraftAccount : public QObject, public Usable {
             } break;
             case AccountType::Offline: {
                 return "offline";
+            } break;
+            case AccountType::Nide8: {
+                return "mojang";
             } break;
             default: {
                 return "unknown";

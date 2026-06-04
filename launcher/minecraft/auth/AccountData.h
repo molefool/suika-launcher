@@ -87,7 +87,7 @@ struct MinecraftProfile {
     Validity validity = Validity::None;
 };
 
-enum class AccountType { MSA, Offline };
+enum class AccountType { MSA, Offline, Nide8 };
 
 enum class AccountState { Unchecked, Offline, Working, Online, Disabled, Errored, Expired, Gone };
 
@@ -114,6 +114,15 @@ struct AccountData {
     MinecraftProfile minecraftProfile;
     MinecraftEntitlement minecraftEntitlement;
     Validity validity_ = Validity::None;
+
+    QString nide8ServerId;
+    QString nide8ApiRoot;
+    QString nide8Username;
+    QString nide8AuthJarPath;
+    QString nide8ServerName;
+    QString nide8ServerAddress;
+    QString nide8JarHash;
+    QString nide8Password;  // runtime only, never saved
 
     // runtime only information (not saved with the account)
     QString internalId;

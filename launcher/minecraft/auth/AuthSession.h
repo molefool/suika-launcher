@@ -21,10 +21,13 @@ struct AuthSession {
     QString player_name;
     // profile ID
     QString uuid;
-    // 'msa' or 'offline', depending on account type
+    // 'msa', 'mojang' or 'offline', depending on account type
     QString user_type;
     // the actual launch mode for this session
     LaunchMode launchMode;
+    bool uses_nide8 = false;
+    QString nide8_server_id;
+    QString nide8_auth_jar_path;
 };
 
 using AuthSessionPtr = std::shared_ptr<AuthSession>;
