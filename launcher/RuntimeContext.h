@@ -58,6 +58,9 @@ struct RuntimeContext {
 
     bool classifierMatches(QString target) const
     {
+        if (target == system)
+            return true;
+
         // try to match precise classifier "[os]-[arch]"
         bool x = target == getClassifier();
         // try to match imprecise classifier on legacy architectures "[os]"

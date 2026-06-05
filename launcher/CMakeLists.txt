@@ -1352,6 +1352,10 @@ endif()
 
 target_link_libraries(${Launcher_Name} Launcher_logic)
 
+if(TARGET compile_assets)
+    add_dependencies(${Launcher_Name} compile_assets)
+endif()
+
 if(DEFINED Launcher_APP_BINARY_NAME)
     set_target_properties(${Launcher_Name} PROPERTIES OUTPUT_NAME "${Launcher_APP_BINARY_NAME}")
 endif()
@@ -1398,6 +1402,14 @@ install(TARGETS ${Launcher_Name}
     LIBRARY DESTINATION ${LIBRARY_DEST_DIR} COMPONENT Runtime
     RUNTIME DESTINATION ${BINARY_DEST_DIR} COMPONENT Runtime
     FRAMEWORK DESTINATION ${FRAMEWORK_DEST_DIR} COMPONENT Runtime
+)
+
+install(FILES
+    "${CMAKE_BINARY_DIR}/jars/JavaCheck.jar"
+    "${CMAKE_BINARY_DIR}/jars/NewLaunch.jar"
+    "${CMAKE_BINARY_DIR}/jars/NewLaunchLegacy.jar"
+    DESTINATION ${BINARY_DEST_DIR}/jars
+    COMPONENT Runtime
 )
 
 if(EXISTS "${NIDE8AUTH_JAR}")

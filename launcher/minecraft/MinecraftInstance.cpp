@@ -88,6 +88,7 @@
 #include "AssetsUtils.h"
 #include "MinecraftLoadAndCheck.h"
 #include "PackProfile.h"
+#include "Version.h"
 
 #include "tools/BaseProfiler.h"
 
@@ -142,6 +143,14 @@
     }
 #endif
     return false;
+}
+
+static bool supportsOfflineDeveloperMode(const QString& minecraftVersion)
+{
+    if (minecraftVersion.isEmpty()) {
+        return false;
+    }
+    return Version(minecraftVersion) >= Version(QStringLiteral("1.20.5"));
 }
 
 // all of this because keeping things compatible with deprecated old settings
@@ -577,7 +586,7 @@ QStringList MinecraftInstance::javaArguments()
     // HACK: fix issues on macOS with 1.13 snapshots
     // NOTE: Oracle Java option. if there are alternate jvm implementations, this would be the place to customize this for them
 #ifdef Q_OS_MAC
-    if (traits_.contains("FirstThreadOnMacOS")) {
+    if (traits_.contains("FirstThreadOnMacOS") || !args.contains("-XstartOnFirstThread")) {
         args << QString("-XstartOnFirstThread");
     }
 #endif
@@ -772,6 +781,11 @@ QStringList MinecraftInstance::processMinecraftArgs(AuthSessionPtr session, Mine
 
         if (session->launchMode == LaunchMode::Demo) {
             args << "--demo";
+        }
+
+        if (session->uses_nide8 && supportsOfflineDeveloperMode(profile->getMinecraftVersion()) &&
+            !args.contains(QStringLiteral("--offlineDeveloperMode"))) {
+            args << "--offlineDeveloperMode";
         }
     }
 

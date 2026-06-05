@@ -346,6 +346,8 @@ class LibraryTest : public QObject {
         auto test = MojangVersionFormat::libraryFromJson(problems, QJsonDocument::fromJson(data).object(), "standalone-native.json");
 
         QCOMPARE(test->isNative(), true);
+        QCOMPARE(test->isActive(r), true);
+        QCOMPARE(r.classifierMatches("osx"), true);
 
         QStringList jar, native, native32, native64;
         test->getApplicableFiles(r, jar, native, native32, native64, QString());

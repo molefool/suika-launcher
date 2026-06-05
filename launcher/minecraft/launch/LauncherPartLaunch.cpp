@@ -70,12 +70,12 @@ bool javaSupportsNide8(const JavaVersion& version)
 QString firstExistingNide8AuthJar(const QString& configuredPath)
 {
     QStringList candidates;
-    if (!configuredPath.isEmpty()) {
-        candidates << configuredPath;
-    }
     candidates << QDir(QCoreApplication::applicationDirPath()).absoluteFilePath(QString(Nide8Auth::AuthJarFileName));
     candidates << QDir::current().absoluteFilePath(QString(Nide8Auth::AuthJarFileName));
     candidates << QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("third_party/nide8auth/nide8auth.jar");
+    if (!configuredPath.isEmpty()) {
+        candidates << configuredPath;
+    }
 
     for (const auto& candidate : candidates) {
         if (QFileInfo::exists(candidate)) {

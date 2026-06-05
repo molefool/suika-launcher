@@ -184,7 +184,7 @@ set(Launcher_LEGACY_FMLLIBS_BASE_URL "https://files.prismlauncher.org/fmllibs/" 
 
 ######## Set version numbers ########
 set(Launcher_VERSION_MAJOR 1)
-set(Launcher_VERSION_MINOR 0)
+set(Launcher_VERSION_MINOR 1)
 set(Launcher_VERSION_PATCH 0)
 
 set(Launcher_VERSION_NAME "${Launcher_VERSION_MAJOR}.${Launcher_VERSION_MINOR}")
@@ -411,6 +411,10 @@ if(UNIX AND APPLE)
             set(ASSETS_OUT_DIR "${CMAKE_BINARY_DIR}/program_info")
             set(GENERATED_ASSETS_CAR "${ASSETS_OUT_DIR}/Assets.car")
             set(ICON_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/${Launcher_Branding_MAC_ICON}")
+            set(ASSETS_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+            if(ASSETS_DEPLOYMENT_TARGET STREQUAL "")
+                set(ASSETS_DEPLOYMENT_TARGET "12.0")
+            endif()
 
             add_custom_command(
                 OUTPUT "${GENERATED_ASSETS_CAR}"
@@ -420,7 +424,7 @@ if(UNIX AND APPLE)
                         --app-icon ${Launcher_Name}
                         --enable-on-demand-resources NO
                         --target-device mac
-                        --minimum-deployment-target ${CMAKE_OSX_DEPLOYMENT_TARGET}
+                        --minimum-deployment-target ${ASSETS_DEPLOYMENT_TARGET}
                         --platform macosx
                 DEPENDS "${ICON_SOURCE}"
                 COMMENT "Compiling asset catalog (${ICON_SOURCE})"

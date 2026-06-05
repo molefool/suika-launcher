@@ -23,7 +23,6 @@
 #include "JsonFormat.h"
 #include "Version.h"
 #include "meta/BaseEntity.h"
-#include "net/DownloadMirror.h"
 #include "net/Mode.h"
 #include "tasks/SequentialTask.h"
 
@@ -223,9 +222,7 @@ void VersionList::mergeFromIndex(const VersionList::Ptr& other)
     if (m_name != other->m_name) {
         setName(other->m_name);
     }
-    if (Net::DownloadMirror::currentSource() == Net::DownloadMirror::Source::BMCLAPI && other->m_sha256.isEmpty()) {
-        m_sha256.clear();
-    } else if (!other->m_sha256.isEmpty()) {
+    if (!other->m_sha256.isEmpty()) {
         m_sha256 = other->m_sha256;
     }
 }
@@ -235,9 +232,7 @@ void VersionList::merge(const VersionList::Ptr& other)
     if (m_name != other->m_name) {
         setName(other->m_name);
     }
-    if (Net::DownloadMirror::currentSource() == Net::DownloadMirror::Source::BMCLAPI && other->m_sha256.isEmpty()) {
-        m_sha256.clear();
-    } else if (!other->m_sha256.isEmpty()) {
+    if (!other->m_sha256.isEmpty()) {
         m_sha256 = other->m_sha256;
     }
 

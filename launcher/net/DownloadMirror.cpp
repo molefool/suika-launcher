@@ -16,26 +16,9 @@ namespace {
 constexpr auto kOfficialSource = "Official";
 constexpr auto kBMCLAPISource = "BMCLAPI";
 constexpr auto kBMCLAPI2Host = "bmclapi2.bangbang93.com";
-constexpr auto kBMCLAPIHost = "bmclapi.bangbang93.com";
 
 bool g_sourceOverrideEnabled = false;
 Source g_sourceOverride = Source::Official;
-
-bool isMinecraftVersionManifestPath(const QString& path)
-{
-    return path == QLatin1String("/mc/game/version_manifest.json") || path == QLatin1String("/mc/game/version_manifest_v2.json");
-}
-
-bool isJavaRuntimeIndexPath(const QString& path)
-{
-    return path.startsWith(QLatin1String("/v1/products/java-runtime/")) && path.endsWith(QLatin1String("/all.json"));
-}
-
-bool isMojangMetaPath(const QString& path)
-{
-    return isMinecraftVersionManifestPath(path) || isJavaRuntimeIndexPath(path) || path.startsWith(QLatin1String("/v1/packages/")) ||
-           path.startsWith(QLatin1String("/mc/assets/"));
-}
 
 bool isObjectDownloadPath(const QString& path)
 {
@@ -115,7 +98,8 @@ QUrl rewriteUrl(QUrl url, Source source)
     const QString host = url.host().toLower();
     const QString path = url.path();
 
-    if ((host == QLatin1String("launchermeta.mojang.com") || host == QLatin1String("piston-meta.mojang.com")) && isMojangMetaPath(path)) {
+    if ((host == QLatin1String("launchermeta.mojang.com") || host == QLatin1String("piston-meta.mojang.com")) &&
+        path.startsWith(QLatin1String("/v1/packages/"))) {
         return withBMCLAPIHost(url, path);
     }
 
@@ -137,37 +121,14 @@ QUrl rewriteUrl(QUrl url, Source source)
         if (path.startsWith(QLatin1String("/maven"))) {
             return withBMCLAPIHost(url, path);
         }
-        if (path.startsWith(QLatin1String("/net/minecraftforge/"))) {
-            return withBMCLAPIHost(url, prefixedPath(QStringLiteral("/maven"), path));
-        }
-    }
-
-    if (host == QLatin1String("meta.fabricmc.net")) {
-        return withBMCLAPIHost(url, prefixedPath(QStringLiteral("/fabric-meta"), path));
-    }
-
-    if (host == QLatin1String("meta.quiltmc.org")) {
-        return withBMCLAPIHost(url, prefixedPath(QStringLiteral("/quilt-meta"), path));
     }
 
     if (host == QLatin1String("maven.quiltmc.org")) {
         return withBMCLAPIHost(url, prefixedPath(QStringLiteral("/maven"), stripPrefix(path, QStringLiteral("/repository/release"))));
     }
 
-    if (host == QLatin1String("maven.neoforged.net") && path.startsWith(QLatin1String("/api/maven/details/"))) {
-        return withBMCLAPIHost(url, prefixedPath(QStringLiteral("/neoforge/meta"), path));
-    }
-
-    if (host == QLatin1String("maven.neoforged.net")) {
+    if (host == QLatin1String("maven.neoforged.net") && path.startsWith(QLatin1String("/releases/"))) {
         return withBMCLAPIHost(url, prefixedPath(QStringLiteral("/maven"), stripPrefix(path, QStringLiteral("/releases"))));
-    }
-
-    if (host == QLatin1String("dl.liteloader.com") && path == QLatin1String("/versions/versions.json")) {
-        return withBMCLAPIHost(url, QStringLiteral("/maven/com/mumfrey/liteloader/versions.json"), kBMCLAPIHost);
-    }
-
-    if (host == QLatin1String("authlib-injector.yushi.moe")) {
-        return withBMCLAPIHost(url, prefixedPath(QStringLiteral("/mirrors/authlib-injector"), path));
     }
 
     return url;

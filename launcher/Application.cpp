@@ -99,6 +99,7 @@
 #include <QStringList>
 #include <QStringLiteral>
 #include <QStyleFactory>
+#include <QTimer>
 #include <QTranslator>
 #include <QWindow>
 
@@ -1670,6 +1671,7 @@ void Application::ShowGlobalSettings(class QWidget* parent, QString open_page)
 
 MainWindow* Application::showMainWindow(bool minimized)
 {
+    static bool suikaTestingNoticeShown = false;
     if (m_mainWindow) {
         m_mainWindow->setWindowState(m_mainWindow->windowState() & ~Qt::WindowMinimized);
         m_mainWindow->raise();
@@ -1689,6 +1691,20 @@ MainWindow* Application::showMainWindow(bool minimized)
         connect(this, &Application::updateAllowedChanged, m_mainWindow, &MainWindow::updatesAllowedChanged);
         connect(m_mainWindow, &MainWindow::isClosing, this, &Application::on_windowClose);
         m_openWindows++;
+
+        if (!minimized && !suikaTestingNoticeShown) {
+            suikaTestingNoticeShown = true;
+            QTimer::singleShot(1200, m_mainWindow, [mainWindow = m_mainWindow] {
+                auto* msgBox = new QMessageBox(QMessageBox::Information, QStringLiteral("内部测试提示"), QString(), QMessageBox::Ok,
+                                               mainWindow);
+                msgBox->setAttribute(Qt::WA_DeleteOnClose);
+                msgBox->setTextFormat(Qt::RichText);
+                msgBox->setText(QStringLiteral(
+                    "<p>启动器正在内部测试阶段，如有问题请截图记录问题和日志然后联系管理员(广陵/Suika)，感谢您的体验！</p>"
+                    "<p style=\"font-size: 11px; color: gray;\">Fork Prism Launcher</p>"));
+                msgBox->open();
+            });
+        }
     }
     return m_mainWindow;
 }
