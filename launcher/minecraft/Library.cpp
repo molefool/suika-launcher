@@ -182,6 +182,9 @@ QList<Net::NetRequest::Ptr> Library::getDownloads(const RuntimeContext& runtimeC
                     }
                 } else {
                     auto info = m_mojangDownloads->getDownloadInfo(nativeClassifier);
+                    if (!info && m_name.classifier() == nativeClassifier && m_mojangDownloads->artifact) {
+                        info = m_mojangDownloads->artifact.get();
+                    }
                     if (info) {
                         add_download(raw_storage, info->url, info->sha1);
                     }

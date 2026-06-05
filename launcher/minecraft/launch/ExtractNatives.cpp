@@ -18,6 +18,7 @@
 #include <minecraft/MinecraftInstance.h>
 
 #include <QDir>
+#include <QFileInfo>
 #include "FileSystem.h"
 #include "archive/ArchiveReader.h"
 #include "archive/ArchiveWriter.h"
@@ -38,6 +39,31 @@ static QString replaceSuffix(QString target, const QString& suffix, const QStrin
     return target + replacement;
 }
 
+static bool isNativeBinary(const QString& name)
+{
+    const auto lower = name.toLower();
+    return lower.endsWith(QLatin1String(".dll")) || lower.endsWith(QLatin1String(".dylib")) || lower.endsWith(QLatin1String(".so")) ||
+           lower.contains(QLatin1String(".so."));
+}
+
+static QString normalizedNativeEntryName(const QString& original)
+{
+    const auto lower = original.toLower();
+    if (lower.startsWith(QLatin1String("meta-inf/")) || original.endsWith(QLatin1Char('/'))) {
+        return {};
+    }
+
+    const auto parts = original.split(QLatin1Char('/'));
+    if (parts.size() >= 3 && isNativeBinary(original)) {
+        const auto platform = parts.at(0).toLower();
+        if (platform == QLatin1String("linux") || platform == QLatin1String("macos") || platform == QLatin1String("windows")) {
+            return QFileInfo(original).fileName();
+        }
+    }
+
+    return original;
+}
+
 static bool unzipNatives(QString source, QString targetFolder, bool applyJnilibHack)
 {
     MMCZip::ArchiveReader zip(source);
@@ -47,8 +73,10 @@ static bool unzipNatives(QString source, QString targetFolder, bool applyJnilibH
     auto ext = extPtr.get();
 
     return zip.parse([applyJnilibHack, directory, ext](MMCZip::ArchiveReader::File* f) {
-        QString name = f->filename();
-        auto lowercase = name.toLower();
+        QString name = normalizedNativeEntryName(f->filename());
+        if (name.isEmpty()) {
+            return true;
+        }
         if (applyJnilibHack) {
             name = replaceSuffix(name, ".jnilib", ".dylib");
         }

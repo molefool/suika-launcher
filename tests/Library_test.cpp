@@ -328,6 +328,39 @@ class LibraryTest : public QObject {
         QCOMPARE(dls[0]->url(), QUrl("https://libraries.minecraft.net/org/lwjgl/lwjgl/lwjgl-platform/2.9.4-nightly-20150209/"
                                      "lwjgl-platform-2.9.4-nightly-20150209-natives-osx.jar"));
     }
+    void test_standalone_native_classifier()
+    {
+        RuntimeContext r = dummyContext("osx", "64", "aarch64");
+        const auto data = QByteArrayLiteral(
+            "{"
+            "\"downloads\":{\"artifact\":{"
+            "\"path\":\"org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-macos-arm64.jar\","
+            "\"sha1\":\"b4cbdef4818abd714ee66985344c0949fd1cd6d6\","
+            "\"size\":52299,"
+            "\"url\":\"https://libraries.minecraft.net/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-macos-arm64.jar\""
+            "}},"
+            "\"name\":\"org.lwjgl:lwjgl:3.4.1:natives-macos-arm64\","
+            "\"rules\":[{\"action\":\"allow\",\"os\":{\"name\":\"osx\"}}]"
+            "}");
+        ProblemContainer problems;
+        auto test = MojangVersionFormat::libraryFromJson(problems, QJsonDocument::fromJson(data).object(), "standalone-native.json");
+
+        QCOMPARE(test->isNative(), true);
+
+        QStringList jar, native, native32, native64;
+        test->getApplicableFiles(r, jar, native, native32, native64, QString());
+        QCOMPARE(jar, {});
+        QCOMPARE(native, getStorage("org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-macos-arm64.jar"));
+        QCOMPARE(native32, {});
+        QCOMPARE(native64, {});
+
+        QStringList failedFiles;
+        Net::DownloadMirror::setSourceOverrideForTests(Net::DownloadMirror::Source::Official);
+        auto dls = test->getDownloads(r, cache.get(), failedFiles, QString());
+        QCOMPARE(dls.size(), 1);
+        QCOMPARE(failedFiles, {});
+        QCOMPARE(dls[0]->url(), QUrl("https://libraries.minecraft.net/org/lwjgl/lwjgl/3.4.1/lwjgl-3.4.1-natives-macos-arm64.jar"));
+    }
     void test_onenine_native_arch()
     {
         RuntimeContext r = dummyContext("windows");

@@ -122,6 +122,34 @@ MojangLibraryDownloadInfo::Ptr libDownloadInfoFromJson(const QJsonObject& libObj
     return out;
 }
 
+QString standaloneNativeRuntimeKey(const QString& classifier)
+{
+    if (!classifier.startsWith(QLatin1String("natives-"))) {
+        return {};
+    }
+
+    const auto platform = classifier.mid(QStringLiteral("natives-").size());
+    if (platform == QLatin1String("macos")) {
+        return QStringLiteral("osx");
+    }
+    if (platform == QLatin1String("macos-arm64")) {
+        return QStringLiteral("osx-arm64");
+    }
+    if (platform == QLatin1String("windows")) {
+        return QStringLiteral("windows");
+    }
+    if (platform == QLatin1String("windows-arm64")) {
+        return QStringLiteral("windows-arm64");
+    }
+    if (platform == QLatin1String("windows-x86")) {
+        return QStringLiteral("windows-x86");
+    }
+    if (platform == QLatin1String("linux")) {
+        return QStringLiteral("linux");
+    }
+    return {};
+}
+
 QJsonObject libDownloadInfoToJson(MojangLibraryDownloadInfo::Ptr libinfo)
 {
     QJsonObject out;
@@ -327,6 +355,15 @@ LibraryPtr MojangVersionFormat::libraryFromJson(ProblemContainer& problems, cons
     }
     if (libObj.contains("downloads")) {
         out->m_mojangDownloads = libDownloadInfoFromJson(libObj);
+    }
+    const auto standaloneNativeClassifier = out->m_name.classifier();
+    const auto runtimeKey = standaloneNativeRuntimeKey(standaloneNativeClassifier);
+    if (!runtimeKey.isEmpty()) {
+        out->m_nativeClassifiers[runtimeKey] = standaloneNativeClassifier;
+        if (out->m_mojangDownloads && out->m_mojangDownloads->artifact &&
+            !out->m_mojangDownloads->classifiers.contains(standaloneNativeClassifier)) {
+            out->m_mojangDownloads->classifiers[standaloneNativeClassifier] = out->m_mojangDownloads->artifact;
+        }
     }
     return out;
 }
