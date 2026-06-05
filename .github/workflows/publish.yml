@@ -1,14 +1,14 @@
 name: Publish
 
 on:
-  release:
-    types: [ released ]
+  workflow_dispatch:
 
 permissions: {}
 
 jobs:
   winget:
     name: Winget
+    if: ${{ false }}
 
     permissions:
       contents: read

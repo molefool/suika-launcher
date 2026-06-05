@@ -53,6 +53,11 @@ QString zhFallback(const char* source, const char* zhCN)
 {
     return SuikaI18n::translate("Nide8AuthStep", source, zhCN);
 }
+
+bool isContactFailure(QNetworkReply::NetworkError error, int statusCode)
+{
+    return error != QNetworkReply::NoError && statusCode <= 0;
+}
 }  // namespace
 
 Nide8AuthStep::Nide8AuthStep(AccountData* data, bool refresh) : AuthStep(data), m_refresh(refresh) {}
@@ -167,6 +172,10 @@ void Nide8AuthStep::requestAuthenticate()
 void Nide8AuthStep::authenticateFinished(QByteArray* response)
 {
     if (m_upload->error() != QNetworkReply::NoError) {
+        if (isContactFailure(m_upload->error(), m_upload->replyStatusCode())) {
+            emit finished(AccountTaskState::STATE_OFFLINE, m_upload->errorString());
+            return;
+        }
         emit finished(AccountTaskState::STATE_FAILED_HARD, responseErrorMessage(*response, m_upload->errorString()));
         return;
     }
@@ -200,6 +209,10 @@ void Nide8AuthStep::validateFinished(QByteArray* response)
         emit finished(AccountTaskState::STATE_WORKING, zhFallback("Unified Pass token is valid.", "统一通行证令牌有效。"));
         return;
     }
+    if (isContactFailure(m_upload->error(), m_upload->replyStatusCode())) {
+        emit finished(AccountTaskState::STATE_OFFLINE, m_upload->errorString());
+        return;
+    }
     requestRefresh();
 }
 
@@ -223,6 +236,10 @@ void Nide8AuthStep::requestRefresh()
 void Nide8AuthStep::refreshFinished(QByteArray* response)
 {
     if (m_upload->error() != QNetworkReply::NoError) {
+        if (isContactFailure(m_upload->error(), m_upload->replyStatusCode())) {
+            emit finished(AccountTaskState::STATE_OFFLINE, m_upload->errorString());
+            return;
+        }
         emit finished(AccountTaskState::STATE_FAILED_HARD, responseErrorMessage(*response, m_upload->errorString()));
         return;
     }

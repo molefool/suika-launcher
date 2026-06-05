@@ -10,7 +10,6 @@
 
 class Mod;
 class ModrinthCheckUpdate;
-class FlameCheckUpdate;
 class ConcurrentTask;
 
 class ResourceUpdateDialog final : public ReviewMessageBox {
@@ -46,13 +45,11 @@ class ResourceUpdateDialog final : public ReviewMessageBox {
     QWidget* m_parent;
 
     shared_qobject_ptr<ModrinthCheckUpdate> m_modrinthCheckTask;
-    shared_qobject_ptr<FlameCheckUpdate> m_flameCheckTask;
 
     ResourceFolderModel* m_resourceModel;
 
     QList<Resource*>& m_candidates;
     QList<Resource*> m_modrinthToUpdate;
-    QList<Resource*> m_flameToUpdate;
 
     ConcurrentTask::Ptr m_secondTryMetadata;
     QList<std::tuple<Resource*, QString>> m_failedMetadata;

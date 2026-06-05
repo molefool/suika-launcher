@@ -41,10 +41,8 @@
 
 #include "ui/pages/modplatform/ResourcePage.h"
 
-#include "ui/pages/modplatform/flame/FlameResourcePages.h"
 #include "ui/pages/modplatform/modrinth/ModrinthResourcePages.h"
 
-#include "modplatform/flame/FlameAPI.h"
 #include "modplatform/modrinth/ModrinthAPI.h"
 #include "ui/widgets/PageContainer.h"
 
@@ -312,11 +310,6 @@ QList<BasePage*> ModDownloadDialog::getPages()
         page->setSuppressInitialSearch(m_suppressInitialSearch);
         pages.append(page);
     }
-    if (APPLICATION->capabilities() & Application::SupportsFlame && FlameAPI::validateModLoaders(loaders)) {
-        auto* page = FlameModPage::create(this, *m_instance);
-        page->setSuppressInitialSearch(m_suppressInitialSearch);
-        pages.append(page);
-    }
 
     return pages;
 }
@@ -359,11 +352,6 @@ QList<BasePage*> ResourcePackDownloadDialog::getPages()
     auto* modrinthPage = ModrinthResourcePackPage::create(this, *m_instance);
     modrinthPage->setSuppressInitialSearch(m_suppressInitialSearch);
     pages.append(modrinthPage);
-    if (APPLICATION->capabilities() & Application::SupportsFlame) {
-        auto* flamePage = FlameResourcePackPage::create(this, *m_instance);
-        flamePage->setSuppressInitialSearch(m_suppressInitialSearch);
-        pages.append(flamePage);
-    }
 
     return pages;
 }
@@ -391,11 +379,6 @@ QList<BasePage*> TexturePackDownloadDialog::getPages()
     auto* modrinthPage = ModrinthTexturePackPage::create(this, *m_instance);
     modrinthPage->setSuppressInitialSearch(m_suppressInitialSearch);
     pages.append(modrinthPage);
-    if (APPLICATION->capabilities() & Application::SupportsFlame) {
-        auto* flamePage = FlameTexturePackPage::create(this, *m_instance);
-        flamePage->setSuppressInitialSearch(m_suppressInitialSearch);
-        pages.append(flamePage);
-    }
 
     return pages;
 }
@@ -422,11 +405,6 @@ QList<BasePage*> ShaderPackDownloadDialog::getPages()
     auto* modrinthPage = ModrinthShaderPackPage::create(this, *m_instance);
     modrinthPage->setSuppressInitialSearch(m_suppressInitialSearch);
     pages.append(modrinthPage);
-    if (APPLICATION->capabilities() & Application::SupportsFlame) {
-        auto* flamePage = FlameShaderPackPage::create(this, *m_instance);
-        flamePage->setSuppressInitialSearch(m_suppressInitialSearch);
-        pages.append(flamePage);
-    }
     return pages;
 }
 
@@ -472,11 +450,6 @@ QList<BasePage*> DataPackDownloadDialog::getPages()
     auto* modrinthPage = ModrinthDataPackPage::create(this, *m_instance);
     modrinthPage->setSuppressInitialSearch(m_suppressInitialSearch);
     pages.append(modrinthPage);
-    if (APPLICATION->capabilities() & Application::SupportsFlame) {
-        auto* flamePage = FlameDataPackPage::create(this, *m_instance);
-        flamePage->setSuppressInitialSearch(m_suppressInitialSearch);
-        pages.append(flamePage);
-    }
     return pages;
 }
 

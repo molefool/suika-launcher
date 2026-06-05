@@ -27,7 +27,6 @@ class UnifiedPassLoginDialog : public QDialog {
     void accept() override;
 
    private slots:
-    void browseAuthJar();
     void openRegisterPage();
     void updateRegisterButton();
 

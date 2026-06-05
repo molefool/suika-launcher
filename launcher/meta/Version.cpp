@@ -18,6 +18,7 @@
 #include <QDateTime>
 
 #include "JsonFormat.h"
+#include "net/DownloadMirror.h"
 
 Meta::Version::Version(const QString& uid, const QString& version) : BaseVersion(), m_uid(uid), m_version(version) {}
 
@@ -68,7 +69,9 @@ void Meta::Version::mergeFromList(const Meta::Version::Ptr& other)
     if (m_volatile != other->m_volatile) {
         setVolatile(other->m_volatile);
     }
-    if (!other->m_sha256.isEmpty()) {
+    if (Net::DownloadMirror::currentSource() == Net::DownloadMirror::Source::BMCLAPI && other->m_sha256.isEmpty()) {
+        m_sha256.clear();
+    } else if (!other->m_sha256.isEmpty()) {
         m_sha256 = other->m_sha256;
     }
 }

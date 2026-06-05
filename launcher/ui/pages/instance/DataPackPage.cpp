@@ -52,6 +52,11 @@ DataPackPage::DataPackPage(BaseInstance* instance, DataPackFolderModel* model, Q
     ui->actionChangeVersion->setToolTip(tr("Change a data pack's version."));
     connect(ui->actionChangeVersion, &QAction::triggered, this, &DataPackPage::changeDataPackVersion);
     ui->actionsToolbar->insertActionAfter(ui->actionUpdateItem, ui->actionChangeVersion);
+
+    ui->actionDownloadItem->setVisible(false);
+    ui->actionUpdateItem->setVisible(false);
+    ui->actionChangeVersion->setVisible(false);
+    ui->actionResetItemMetadata->setVisible(false);
 }
 
 void DataPackPage::updateFrame(const QModelIndex& current, [[maybe_unused]] const QModelIndex& previous)

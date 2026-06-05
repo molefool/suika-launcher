@@ -79,7 +79,7 @@ ImportPage::~ImportPage()
 
 bool ImportPage::shouldDisplay() const
 {
-    return true;
+    return false;
 }
 
 void ImportPage::retranslate()

@@ -8,10 +8,7 @@
 
 #include <QDialogButtonBox>
 #include <QDir>
-#include <QFileDialog>
-#include <QFileInfo>
 #include <QFormLayout>
-#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -52,15 +49,8 @@ UnifiedPassLoginDialog::UnifiedPassLoginDialog(QWidget* parent) : QDialog(parent
     m_password->setEchoMode(QLineEdit::Password);
     form->addRow(zhFallback("Password:", "密码："), m_password);
 
-    auto* jarRow = new QWidget(this);
-    auto* jarLayout = new QHBoxLayout(jarRow);
-    jarLayout->setContentsMargins(0, 0, 0, 0);
     m_authJarPath = new QLineEdit(defaultAuthJarPath(), this);
-    auto* browseButton = new QPushButton(zhFallback("Browse...", "浏览..."), this);
-    connect(browseButton, &QPushButton::clicked, this, &UnifiedPassLoginDialog::browseAuthJar);
-    jarLayout->addWidget(m_authJarPath);
-    jarLayout->addWidget(browseButton);
-    form->addRow(tr("nide8auth.jar:"), jarRow);
+    m_authJarPath->hide();
 
     layout->addLayout(form);
 
@@ -91,17 +81,6 @@ bool UnifiedPassLoginDialog::serverIdLooksValid() const
 {
     static const QRegularExpression serverIdRegex(QStringLiteral("^[0-9A-Fa-f]{32}$"));
     return serverIdRegex.match(QString(Nide8Auth::DefaultServerId)).hasMatch();
-}
-
-void UnifiedPassLoginDialog::browseAuthJar()
-{
-    const auto path =
-        QFileDialog::getOpenFileName(this, zhFallback("Select nide8auth.jar", "选择 nide8auth.jar"),
-                                     QFileInfo(m_authJarPath->text()).absolutePath(),
-                                     zhFallback("Java archives (*.jar);;All files (*)", "Java 归档 (*.jar);;所有文件 (*)"));
-    if (!path.isEmpty()) {
-        m_authJarPath->setText(path);
-    }
 }
 
 void UnifiedPassLoginDialog::openRegisterPage()

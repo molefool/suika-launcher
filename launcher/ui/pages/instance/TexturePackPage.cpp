@@ -75,6 +75,11 @@ TexturePackPage::TexturePackPage(MinecraftInstance* instance, TexturePackFolderM
     ui->actionsToolbar->insertActionAfter(ui->actionUpdateItem, ui->actionChangeVersion);
 
     ui->actionViewHomepage->setToolTip(tr("View the homepages of all selected texture packs."));
+
+    ui->actionDownloadItem->setVisible(false);
+    ui->actionUpdateItem->setVisible(false);
+    ui->actionChangeVersion->setVisible(false);
+    ui->actionResetItemMetadata->setVisible(false);
 }
 
 void TexturePackPage::updateFrame(const QModelIndex& current, [[maybe_unused]] const QModelIndex& previous)

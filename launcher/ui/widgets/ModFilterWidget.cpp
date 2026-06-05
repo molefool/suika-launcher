@@ -158,6 +158,11 @@ ModFilterWidget::ModFilterWidget(MinecraftInstance* instance, bool extended)
 
     connect(ui->showMoreButton, &QPushButton::clicked, this, &ModFilterWidget::onShowMoreClicked);
 
+    ui->forge->hide();
+    ui->quilt->hide();
+    ui->showMoreButton->hide();
+    ui->extendedModLoadersWidget->hide();
+
     if (!extended) {
         ui->showMoreButton->setVisible(false);
         ui->extendedModLoadersWidget->setVisible(false);
@@ -236,16 +241,17 @@ void ModFilterWidget::prepareBasicFilter()
         } else {
             loaders = m_instance->getPackProfile()->getSupportedModLoaders().value();
         }
+        loaders &= (ModPlatform::NeoForge | ModPlatform::Fabric);
         ui->neoForge->setChecked(loaders & ModPlatform::NeoForge);
-        ui->forge->setChecked(loaders & ModPlatform::Forge);
+        ui->forge->setChecked(false);
         ui->fabric->setChecked(loaders & ModPlatform::Fabric);
-        ui->quilt->setChecked(loaders & ModPlatform::Quilt);
-        ui->liteLoader->setChecked(loaders & ModPlatform::LiteLoader);
-        ui->babric->setChecked(loaders & ModPlatform::Babric);
-        ui->btaBabric->setChecked(loaders & ModPlatform::BTA);
-        ui->legacyFabric->setChecked(loaders & ModPlatform::LegacyFabric);
-        ui->ornithe->setChecked(loaders & ModPlatform::Ornithe);
-        ui->rift->setChecked(loaders & ModPlatform::Rift);
+        ui->quilt->setChecked(false);
+        ui->liteLoader->setChecked(false);
+        ui->babric->setChecked(false);
+        ui->btaBabric->setChecked(false);
+        ui->legacyFabric->setChecked(false);
+        ui->ornithe->setChecked(false);
+        ui->rift->setChecked(false);
         m_filter->loaders = loaders;
         auto def = m_instance->getPackProfile()->getComponentVersion("net.minecraft");
         m_filter->versions.emplace_back(def);
@@ -285,24 +291,8 @@ void ModFilterWidget::onLoadersFilterChanged()
     ModPlatform::ModLoaderTypes loaders;
     if (ui->neoForge->isChecked())
         loaders |= ModPlatform::NeoForge;
-    if (ui->forge->isChecked())
-        loaders |= ModPlatform::Forge;
     if (ui->fabric->isChecked())
         loaders |= ModPlatform::Fabric;
-    if (ui->quilt->isChecked())
-        loaders |= ModPlatform::Quilt;
-    if (ui->liteLoader->isChecked())
-        loaders |= ModPlatform::LiteLoader;
-    if (ui->babric->isChecked())
-        loaders |= ModPlatform::Babric;
-    if (ui->btaBabric->isChecked())
-        loaders |= ModPlatform::BTA;
-    if (ui->legacyFabric->isChecked())
-        loaders |= ModPlatform::LegacyFabric;
-    if (ui->ornithe->isChecked())
-        loaders |= ModPlatform::Ornithe;
-    if (ui->rift->isChecked())
-        loaders |= ModPlatform::Rift;
     m_filter_changed = loaders != m_filter->loaders;
     m_filter->loaders = loaders;
     if (m_filter_changed)

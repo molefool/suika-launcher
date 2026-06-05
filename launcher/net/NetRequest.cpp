@@ -405,8 +405,10 @@ auto NetRequest::abort() -> bool
 {
     m_state = State::AbortedByUser;
     if (m_reply) {
-        disconnect(m_reply.get(), &QNetworkReply::errorOccurred, nullptr, nullptr);
-        m_reply->abort();
+        auto* reply = m_reply.release();
+        disconnect(reply, nullptr, this, nullptr);
+        reply->abort();
+        reply->deleteLater();
     }
     return true;
 }

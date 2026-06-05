@@ -69,6 +69,11 @@ ResourcePackPage::ResourcePackPage(MinecraftInstance* instance, ResourcePackFold
     ui->actionChangeVersion->setToolTip(tr("Change a mod's version."));
     connect(ui->actionChangeVersion, &QAction::triggered, this, &ResourcePackPage::changeResourcePackVersion);
     ui->actionsToolbar->insertActionAfter(ui->actionUpdateItem, ui->actionChangeVersion);
+
+    ui->actionDownloadItem->setVisible(false);
+    ui->actionUpdateItem->setVisible(false);
+    ui->actionChangeVersion->setVisible(false);
+    ui->actionResetItemMetadata->setVisible(false);
 }
 
 void ResourcePackPage::updateFrame(const QModelIndex& current, [[maybe_unused]] const QModelIndex& previous)

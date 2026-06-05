@@ -31,6 +31,12 @@ bool isJavaRuntimeIndexPath(const QString& path)
     return path.startsWith(QLatin1String("/v1/products/java-runtime/")) && path.endsWith(QLatin1String("/all.json"));
 }
 
+bool isMojangMetaPath(const QString& path)
+{
+    return isMinecraftVersionManifestPath(path) || isJavaRuntimeIndexPath(path) || path.startsWith(QLatin1String("/v1/packages/")) ||
+           path.startsWith(QLatin1String("/mc/assets/"));
+}
+
 bool isObjectDownloadPath(const QString& path)
 {
     return path.startsWith(QLatin1String("/v1/objects/"));
@@ -109,17 +115,12 @@ QUrl rewriteUrl(QUrl url, Source source)
     const QString host = url.host().toLower();
     const QString path = url.path();
 
-    if ((host == QLatin1String("launchermeta.mojang.com") || host == QLatin1String("piston-meta.mojang.com")) &&
-        isMinecraftVersionManifestPath(path)) {
-        return withBMCLAPIHost(url, path);
-    }
-
-    if (host == QLatin1String("launchermeta.mojang.com") && isJavaRuntimeIndexPath(path)) {
+    if ((host == QLatin1String("launchermeta.mojang.com") || host == QLatin1String("piston-meta.mojang.com")) && isMojangMetaPath(path)) {
         return withBMCLAPIHost(url, path);
     }
 
     if ((host == QLatin1String("launcher.mojang.com") || host == QLatin1String("piston-data.mojang.com")) &&
-        isObjectDownloadPath(path)) {
+        (isObjectDownloadPath(path) || path.startsWith(QLatin1String("/mc/game/")))) {
         return withBMCLAPIHost(url, path);
     }
 

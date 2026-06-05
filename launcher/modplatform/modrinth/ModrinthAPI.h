@@ -42,9 +42,7 @@ class ModrinthAPI : public ResourceAPI {
     static auto getModLoaderStrings(const ModPlatform::ModLoaderTypes types) -> QStringList
     {
         QStringList l;
-        for (auto loader : { ModPlatform::NeoForge, ModPlatform::Forge, ModPlatform::Fabric, ModPlatform::Quilt, ModPlatform::LiteLoader,
-                             ModPlatform::DataPack, ModPlatform::Babric, ModPlatform::BTA, ModPlatform::LegacyFabric, ModPlatform::Ornithe,
-                             ModPlatform::Rift }) {
+        for (auto loader : { ModPlatform::NeoForge, ModPlatform::Fabric }) {
             if ((types & loader) != 0U) {
                 l << getModLoaderAsString(loader);
             }
@@ -212,9 +210,7 @@ class ModrinthAPI : public ResourceAPI {
 
     static auto validateModLoaders(ModPlatform::ModLoaderTypes loaders) -> bool
     {
-        return (loaders & (ModPlatform::NeoForge | ModPlatform::Forge | ModPlatform::Fabric | ModPlatform::Quilt | ModPlatform::LiteLoader |
-                           ModPlatform::DataPack | ModPlatform::Babric | ModPlatform::BTA | ModPlatform::LegacyFabric |
-                           ModPlatform::Ornithe | ModPlatform::Rift)) != 0;
+        return (loaders & (ModPlatform::NeoForge | ModPlatform::Fabric)) != 0;
     }
 
     std::optional<QString> getDependencyURL(const DependencySearchArgs& args) const override

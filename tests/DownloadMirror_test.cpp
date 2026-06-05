@@ -41,6 +41,15 @@ class DownloadMirrorTest : public QObject {
         QCOMPARE(Net::DownloadMirror::rewriteUrl(QUrl("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"),
                                                  Net::DownloadMirror::Source::BMCLAPI),
                  QUrl("https://bmclapi2.bangbang93.com/mc/game/version_manifest_v2.json"));
+        QCOMPARE(Net::DownloadMirror::rewriteUrl(QUrl("https://piston-meta.mojang.com/v1/packages/5643d63e75d54da43c9501cdb1988530a9bc5d7f/manifest.json"),
+                                                 Net::DownloadMirror::Source::BMCLAPI),
+                 QUrl("https://bmclapi2.bangbang93.com/v1/packages/5643d63e75d54da43c9501cdb1988530a9bc5d7f/manifest.json"));
+        QCOMPARE(Net::DownloadMirror::rewriteUrl(QUrl("https://piston-meta.mojang.com/v1/packages/bd326ebbea07119b1f603bafc4ea0f64e3605c8b/1.21.5.json"),
+                                                 Net::DownloadMirror::Source::BMCLAPI),
+                 QUrl("https://bmclapi2.bangbang93.com/v1/packages/bd326ebbea07119b1f603bafc4ea0f64e3605c8b/1.21.5.json"));
+        QCOMPARE(Net::DownloadMirror::rewriteUrl(QUrl("https://launcher.mojang.com/mc/game/client.jar"),
+                                                 Net::DownloadMirror::Source::BMCLAPI),
+                 QUrl("https://bmclapi2.bangbang93.com/mc/game/client.jar"));
         QCOMPARE(Net::DownloadMirror::rewriteUrl(QUrl("https://files.minecraftforge.net/maven/net/minecraftforge/forge/1.20.1/forge.jar"),
                                                  Net::DownloadMirror::Source::BMCLAPI),
                  QUrl("https://bmclapi2.bangbang93.com/maven/net/minecraftforge/forge/1.20.1/forge.jar"));
@@ -73,8 +82,6 @@ class DownloadMirrorTest : public QObject {
             QUrl("https://auth.mc-user.com:233/aa9441c0487a11e88feb525400b59b6a/authserver/refresh"),
             QUrl("https://login.mc-user.com:233/aa9441c0487a11e88feb525400b59b6a/loginreg"),
             QUrl("https://meta.prismlauncher.org/v1/net.minecraft/index.json"),
-            QUrl("https://piston-meta.mojang.com/v1/packages/5643d63e75d54da43c9501cdb1988530a9bc5d7f/manifest.json"),
-            QUrl("https://piston-meta.mojang.com/v1/packages/bd326ebbea07119b1f603bafc4ea0f64e3605c8b/1.21.5.json"),
             QUrl("https://api.modrinth.com/v2/project/foo"),
             QUrl("https://cdn.modrinth.com/data/foo/bar.jar"),
             QUrl("https://textures.minecraft.net/texture/abcdef"),
