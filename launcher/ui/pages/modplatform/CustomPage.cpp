@@ -46,6 +46,21 @@
 #include "minecraft/VanillaInstanceCreationTask.h"
 #include "ui/dialogs/NewInstanceDialog.h"
 
+namespace {
+
+bool hasMinecraftParentVersion(const Meta::VersionList::Ptr& versionList, const QString& minecraftVersion)
+{
+    if (!versionList) {
+        return false;
+    }
+
+    versionList->waitToLoad();
+    return versionList->getRecommendedForParent(QStringLiteral("net.minecraft"), minecraftVersion) ||
+           versionList->getLatestForParent(QStringLiteral("net.minecraft"), minecraftVersion);
+}
+
+}  // namespace
+
 CustomPage::CustomPage(NewInstanceDialog* dialog, QWidget* parent) : QWidget(parent), dialog(dialog), ui(new Ui::CustomPage)
 {
     ui->setupUi(this);
@@ -140,14 +155,29 @@ void CustomPage::loaderFilterChanged()
         ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, minecraftVersion);
         m_selectedLoader = "net.minecraftforge";
     } else if (ui->fabricFilter->isChecked()) {
-        ui->loaderVersionList->setExactIfPresentFilter(BaseVersionList::ParentVersionRole, minecraftVersion);
-        m_selectedLoader = "net.fabricmc.fabric-loader";
+        if (hasMinecraftParentVersion(APPLICATION->metadataIndex()->get("net.fabricmc.intermediary"), minecraftVersion)) {
+            ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "");
+            m_selectedLoader = "net.fabricmc.fabric-loader";
+        } else {
+            ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "AAA");  // empty list
+        }
     } else if (ui->quiltFilter->isChecked()) {
-        ui->loaderVersionList->setExactIfPresentFilter(BaseVersionList::ParentVersionRole, minecraftVersion);
-        m_selectedLoader = "org.quiltmc.quilt-loader";
+        if (hasMinecraftParentVersion(APPLICATION->metadataIndex()->get("org.quiltmc.hashed"), minecraftVersion)) {
+            ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "");
+            m_selectedLoader = "org.quiltmc.quilt-loader";
+        } else {
+            ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "AAA");  // empty list
+        }
     } else if (ui->liteLoaderFilter->isChecked()) {
         ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, minecraftVersion);
         m_selectedLoader = "com.mumfrey.liteloader";
+    }
+
+    if (m_selectedLoader.isEmpty()) {
+        ui->loaderVersionList->setEmptyString(tr("No versions are currently available for Minecraft %1").arg(minecraftVersion));
+        ui->loaderVersionList->setEmptyMode(VersionListView::String);
+        suggestCurrent();
+        return;
     }
 
     auto vlist = APPLICATION->metadataIndex()->get(m_selectedLoader);
@@ -197,9 +227,11 @@ void CustomPage::suggestCurrent()
         return;
     }
 
-    if (m_selectedLoader.isEmpty() || !m_selectedLoaderVersion)
+    if (ui->noneFilter->isChecked()) {
         dialog->setSuggestedPack(m_selectedVersion->descriptor(), new VanillaCreationTask(m_selectedVersion));
-    else {
+    } else if (m_selectedLoader.isEmpty() || !m_selectedLoaderVersion) {
+        dialog->setSuggestedPack(m_selectedVersion->descriptor(), nullptr);
+    } else {
         dialog->setSuggestedPack(m_selectedVersion->descriptor(),
                                  new VanillaCreationTask(m_selectedVersion, m_selectedLoader, m_selectedLoaderVersion));
     }
