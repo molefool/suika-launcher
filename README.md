@@ -1,38 +1,81 @@
 # Suika Launcher
 
-Suika Launcher is a modified fork of [Prism Launcher](https://github.com/PrismLauncher/PrismLauncher) for the Suika server. The app keeps the English product/package name `Suika Launcher`, while the player-facing UI identifies the server as `西瓜幻想乡`.
+Suika Launcher is a server-focused fork of [Prism Launcher](https://github.com/PrismLauncher/PrismLauncher) for the Suika server / `西瓜幻想乡`.
 
-This project is **not Prism Launcher** and is not endorsed by or affiliated with the Prism Launcher project.
+This project is **not Prism Launcher** and is not endorsed by or affiliated with the Prism Launcher project. Upstream copyright notices, license files and attribution are retained.
 
-## Current Changes
+## Main Changes From Prism Launcher
 
-- Adds a Unified Pass account type and login dialog.
-- Supports server ID based authentication against `https://auth.mc-user.com:233/<serverId>/`.
-- Fixes the Unified Pass server ID to `aa9441c0487a11e88feb525400b59b6a`; the login UI does not expose a server ID editor.
-- Bundles English and simplified Chinese (`zh_CN`) translations and disables remote translation downloads.
-- Defaults existing and new Suika Launcher profiles to simplified Chinese once, while still allowing English to be selected later.
-- Implements authenticate, validate, refresh and profile lookup flows compatible with the Mojang-style auth protocol used by Unified Pass.
-- Adds launch-time JVM arguments for Unified Pass sessions:
+### Server-Only Account Flow
+
+- Adds Unified Pass / Nide8 authentication for the Suika server.
+- Fixes the Unified Pass server ID to `aa9441c0487a11e88feb525400b59b6a`; players cannot edit it in the login UI.
+- Uses the Unified Pass Mojang/Yggdrasil-compatible endpoints for authenticate, validate, refresh and profile lookup.
+- Requires Unified Pass accounts to validate online before launching.
+- Loads Unified Pass skins through the server sessionserver-compatible profile endpoint.
+- Installs and uses `nide8auth.jar` at launch time with:
   - `-javaagent:<nide8auth.jar path>=<serverId>`
   - `-Dnide8auth.client=true`
-- Checks that the selected Java runtime is Java 8 update 101 or newer before launching a Unified Pass session.
-- Passes Unified Pass accounts to Minecraft as Mojang/Yggdrasil-compatible sessions and loads the Nide8 agent so Minecraft 1.19+ secure profile public-key checks use the Unified Pass server metadata.
-- Loads Unified Pass skins through the server's sessionserver-compatible profile endpoint.
-- Allows only Unified Pass accounts in the player-facing account UI and launch flow.
-- Disables Microsoft login, offline login, CurseForge integration, global API-key settings and Imgur API-key overrides for this server build.
+- Requires Java 8 update 101 or newer for Unified Pass launches.
+- Hides Microsoft login, offline login and other account types from the player-facing account UI.
+
+### Suika Server Experience
+
+- Keeps the technical product/package name as `Suika Launcher`, while player-facing UI displays `西瓜幻想乡`.
+- Uses `https://www.suika.fun/` for website, help and launcher links.
+- Uses an independent Suika Launcher data directory instead of reusing Prism Launcher's data directory.
+- Adds the default multiplayer server entry to created/imported instances:
+  - Name: `西瓜幻想乡群组服务器`
+  - Address: `mc.suika.fun`
+- Shows a startup internal-testing notice for current test builds.
 - Disables launcher self-update checks.
-- Uses `https://www.suika.fun/` for the launcher website/help/news links.
-- Rebrands build metadata and package identity to Suika Launcher. Display version is currently `1.0`.
 
-Suika Launcher uses its own application data directory. It does not automatically reuse Prism Launcher's instances, accounts, assets, libraries or configuration files.
+### Downloads And Mod Sources
 
-The Suika application icon is based on the user-provided image at `https://www.suika.fun/static/picture/20200507125350.png`.
+- Adds a selectable download source setting:
+  - `BMCLAPI 中国下载源`
+  - `官方默认源`
+- Defaults new installs to BMCLAPI for better download performance in China.
+- Rewrites supported Mojang/library/asset/Java runtime/mod-loader Maven downloads to BMCLAPI when that source is selected.
+- Falls back to the official source if a BMCLAPI download fails.
+- Does not rewrite Unified Pass, Suika website, Microsoft auth, skin texture, Modrinth API/CDN or other non-whitelisted requests.
+- Keeps Modrinth mod/resource download support enabled.
+- Hides CurseForge/Flame, FTB/ATLauncher/Technic pack browsing and other unused pack download entries from the player-facing flow.
+- Keeps vanilla, Fabric and NeoForge instance creation visible; hides Forge, Quilt and LiteLoader in the new-instance UI.
+
+### Language And UI
+
+- Bundles English and Simplified Chinese only.
+- Defaults first-run language to Simplified Chinese (`zh_CN`) and supports old `zh` settings.
+- Disables remote translation downloads.
+- Adds Simplified Chinese text for Suika-specific Unified Pass and launcher UI.
+- Removes player-facing settings pages that are not useful for this server build, including proxy and external tools pages.
+
+### Branding And Packaging
+
+- Version is currently `1.1`.
+- App/bundle/binary/internal product identity stays ASCII-safe as `Suika Launcher`.
+- The player-facing name is `西瓜幻想乡`.
+- Replaces the app icon with Suika branding based on `https://www.suika.fun/static/picture/20200507125350.png`.
+- Removes bundled Prism third-party API keys and disables the corresponding Microsoft, CurseForge and Imgur integrations.
 
 ## Runtime Agent
 
 Unified Pass launch requires `nide8auth.jar`.
 
-The source tree includes an authorized runtime copy at `third_party/nide8auth/nide8auth.jar`. CMake copies and installs it next to the launcher executable on macOS, Windows and Linux. The jar is an independent third-party runtime component provided by nide8/Unified Pass and is documented in [NOTICE.md](NOTICE.md) and [third_party/nide8auth/README.md](third_party/nide8auth/README.md).
+The source tree includes a runtime copy at `third_party/nide8auth/nide8auth.jar`. CMake copies and installs it next to the launcher executable on macOS, Windows and Linux. The jar is an independent third-party runtime component provided by nide8/Unified Pass and is documented in [NOTICE.md](NOTICE.md) and [third_party/nide8auth/README.md](third_party/nide8auth/README.md).
+
+## Third-Party Notices
+
+- Launcher code remains GPL-3.0-only. See [LICENSE](LICENSE).
+- This fork incorporates Prism Launcher, PolyMC and MultiMC work. See [COPYING.md](COPYING.md) and [FORK_NOTICE.md](FORK_NOTICE.md).
+- Logo and inherited assets are licensed under CC BY-SA 4.0. See [program_info/LICENSE](program_info/LICENSE).
+- BMCLAPI download mirror support is based on the public BMCLAPI path scheme. See [BMCLAPI documentation](https://bmclapidoc.bangbang93.com/) and [openbmclapi / BMCLAPI@Home](https://github.com/bangbang93/openbmclapi), MIT License.
+- `nide8auth.jar` is a separate runtime component and is not authored by Prism Launcher.
+
+## Resource Hosting
+
+Suika Launcher does not host or bundle Minecraft game files, assets, libraries, Java runtimes, mod loader files or Modrinth files. Those files are downloaded from the selected official/BMCLAPI/third-party source at runtime.
 
 ## Building
 
@@ -43,10 +86,10 @@ Typical build requirements are the same as Prism Launcher:
 - CMake
 - Ninja or another supported CMake generator
 - Qt 6
-- Java 17 for building the helper jars
+- Java 17 for building helper jars
 - vcpkg dependencies used by Prism Launcher
 
-Platform packages should set a distinct build platform, for example:
+Example macOS configure command:
 
 ```sh
 cmake --preset macos \
@@ -64,6 +107,4 @@ Do not add Prism Launcher's private third-party API keys back into this fork. Re
 
 Launcher code is licensed under GPL-3.0-only. See [LICENSE](LICENSE).
 
-This fork incorporates Prism Launcher, PolyMC and MultiMC work. See [COPYING.md](COPYING.md) and [FORK_NOTICE.md](FORK_NOTICE.md) for attribution and modification notes.
-
-Logo and related inherited assets are licensed under CC BY-SA 4.0. See [program_info/LICENSE](program_info/LICENSE).
+This fork retains upstream Prism Launcher, PolyMC and MultiMC attribution. See [COPYING.md](COPYING.md), [FORK_NOTICE.md](FORK_NOTICE.md) and [NOTICE.md](NOTICE.md).
