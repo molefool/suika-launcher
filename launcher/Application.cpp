@@ -1694,15 +1694,19 @@ MainWindow* Application::showMainWindow(bool minimized)
 
         if (!minimized && !suikaTestingNoticeShown) {
             suikaTestingNoticeShown = true;
-            QTimer::singleShot(1200, m_mainWindow, [mainWindow = m_mainWindow] {
+            QTimer::singleShot(0, m_mainWindow, [mainWindow = m_mainWindow] {
                 auto* msgBox = new QMessageBox(QMessageBox::Information, QStringLiteral("内部测试提示"), QString(), QMessageBox::Ok,
                                                mainWindow);
                 msgBox->setAttribute(Qt::WA_DeleteOnClose);
+                msgBox->setWindowModality(Qt::NonModal);
                 msgBox->setTextFormat(Qt::RichText);
                 msgBox->setText(QStringLiteral(
                     "<p>启动器正在内部测试阶段，如有问题请截图记录问题和日志然后联系管理员(广陵/Suika)，感谢您的体验！</p>"
+                    "<p>加载游戏列表大约需要1-3分钟，请耐心等待。</p>"
                     "<p style=\"font-size: 11px; color: gray;\">Fork Prism Launcher</p>"));
-                msgBox->open();
+                msgBox->show();
+                msgBox->raise();
+                msgBox->activateWindow();
             });
         }
     }
