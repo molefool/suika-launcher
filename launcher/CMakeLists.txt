@@ -1577,7 +1577,6 @@ if(WIN32 OR (UNIX AND APPLE))
             PLUGINS_DIR ${PLUGIN_DEST_DIR}
             NO_OVERWRITE
             NO_TRANSLATIONS
-            NO_COMPILER_RUNTIME
             DEPLOY_TOOL_OPTIONS ${QT_DEPLOY_TOOL_OPTIONS}
         )"
     )
