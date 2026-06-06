@@ -41,25 +41,11 @@
 #include "Application.h"
 #include "Filter.h"
 #include "SuikaI18n.h"
+#include "Version.h"
 #include "meta/Index.h"
 #include "meta/VersionList.h"
 #include "minecraft/VanillaInstanceCreationTask.h"
 #include "ui/dialogs/NewInstanceDialog.h"
-
-namespace {
-
-bool hasMinecraftParentVersion(const Meta::VersionList::Ptr& versionList, const QString& minecraftVersion)
-{
-    if (!versionList) {
-        return false;
-    }
-
-    versionList->waitToLoad();
-    return versionList->getRecommendedForParent(QStringLiteral("net.minecraft"), minecraftVersion) ||
-           versionList->getLatestForParent(QStringLiteral("net.minecraft"), minecraftVersion);
-}
-
-}  // namespace
 
 CustomPage::CustomPage(NewInstanceDialog* dialog, QWidget* parent) : QWidget(parent), dialog(dialog), ui(new Ui::CustomPage)
 {
@@ -155,19 +141,19 @@ void CustomPage::loaderFilterChanged()
         ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, minecraftVersion);
         m_selectedLoader = "net.minecraftforge";
     } else if (ui->fabricFilter->isChecked()) {
-        if (hasMinecraftParentVersion(APPLICATION->metadataIndex()->get("net.fabricmc.intermediary"), minecraftVersion)) {
+        // FIXME: dirty hack because the launcher is unaware of Fabric's dependencies
+        if (Version(minecraftVersion) >= Version("1.14"))  // Fabric/Quilt supported
             ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "");
-            m_selectedLoader = "net.fabricmc.fabric-loader";
-        } else {
+        else                                                                                   // Fabric/Quilt unsupported
             ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "AAA");  // empty list
-        }
+        m_selectedLoader = "net.fabricmc.fabric-loader";
     } else if (ui->quiltFilter->isChecked()) {
-        if (hasMinecraftParentVersion(APPLICATION->metadataIndex()->get("org.quiltmc.hashed"), minecraftVersion)) {
+        // FIXME: dirty hack because the launcher is unaware of Quilt's dependencies (same as Fabric)
+        if (Version(minecraftVersion) >= Version("1.14"))  // Fabric/Quilt supported
             ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "");
-            m_selectedLoader = "org.quiltmc.quilt-loader";
-        } else {
+        else                                                                                   // Fabric/Quilt unsupported
             ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, "AAA");  // empty list
-        }
+        m_selectedLoader = "org.quiltmc.quilt-loader";
     } else if (ui->liteLoaderFilter->isChecked()) {
         ui->loaderVersionList->setExactFilter(BaseVersionList::ParentVersionRole, minecraftVersion);
         m_selectedLoader = "com.mumfrey.liteloader";
